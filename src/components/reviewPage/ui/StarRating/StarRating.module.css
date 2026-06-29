@@ -1,0 +1,12 @@
+.stars {
+  color: var(--star);
+  letter-spacing: 1px;
+}
+
+.star {
+  opacity: 0.25;
+}
+
+.star.filled {
+  opacity: 1;
+}

@@ -1,0 +1,72 @@
+.card {
+  background: var(--bg);
+  border: 0.5px solid var(--b1);
+  border-radius: var(--rm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.header { display: flex; gap: 10px; align-items: flex-start; }
+.avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.meta { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.nameRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.name { font-size: 13px; font-weight: 600; color: var(--t1); }
+.subRow { display: flex; align-items: center; gap: 6px; }
+.date { font-size: 11px; color: var(--t3); }
+.text { font-size: 13px; color: var(--t2); line-height: 1.55; margin: 0; }
+.footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.replyBadge {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 20px;
+  border: none; cursor: default;
+}
+.hasReply { background: var(--blue-l); color: var(--blue-d); cursor: pointer; }
+.noReply  { background: var(--gray-l); color: var(--gray-d); }
+
+.assignBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--t3);
+  background: none; border: 0.5px solid var(--b2);
+  border-radius: var(--rm); padding: 3px 10px; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.assignBtn:hover { color: var(--t1); border-color: var(--b3); }
+
+.assignedBadge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500;
+  padding: 3px 10px; border-radius: 20px;
+  background: var(--purple-l); color: var(--purple-d);
+  border: none; cursor: default;
+}
+.assignedBadge.clickable { cursor: pointer; }
+
+.replyBlock {
+  background: var(--bg2);
+  border-radius: var(--rm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.replyLabel {
+  font-size: 11px; font-weight: 600; color: var(--t2);
+  display: flex; align-items: center; gap: 5px;
+}
+.replyText { font-size: 12px; color: var(--t2); line-height: 1.55; margin: 0; }
+.replyLink {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--blue-d); text-decoration: none;
+  align-self: flex-start;
+}
+.replyLink:hover { text-decoration: underline; }

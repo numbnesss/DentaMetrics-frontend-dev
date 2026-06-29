@@ -1,0 +1,39 @@
+.card {
+  background: var(--bg);
+  border: 0.5px solid var(--b1);
+  border-radius: var(--rl);
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.titleIcon {
+  font-size: 15px;
+  color: var(--t2);
+}
+
+.todayBadge {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--teal-l);
+  color: var(--teal-d);
+  padding: 2px 7px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
