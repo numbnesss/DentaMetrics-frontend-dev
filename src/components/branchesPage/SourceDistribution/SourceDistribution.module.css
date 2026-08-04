@@ -1,0 +1,8 @@
+.wrap { display: flex; flex-direction: column; gap: 7px; }
+.row { display: flex; align-items: center; gap: 7px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.name { font-size: 12px; color: var(--t2); width: 90px; flex-shrink: 0; }
+.track { flex: 1; height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.pct { font-size: 11px; color: var(--t3); width: 28px; text-align: right; flex-shrink: 0; }
+.empty { font-size: 12px; color: var(--t3); padding: 4px 0; }

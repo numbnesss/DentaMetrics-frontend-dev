@@ -1,0 +1,135 @@
+.card {
+  background: var(--bg);
+  border: 0.5px solid var(--b1);
+  border-radius: var(--rl);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  border-color: var(--b2);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--t3);
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ratingValue {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--t1);
+  line-height: 1;
+}
+
+.ratingMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reviewCount {
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.miniCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.miniCard {
+  background: var(--bg2);
+  border-radius: var(--rm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.miniLabel {
+  font-size: 10px;
+  color: var(--t3);
+}
+
+.miniValue {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.positive { color: var(--teal); }
+.neutral { color: var(--gray-d); }
+.negative { color: var(--red); }
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--b1);
+}
+
+.trendLabel {
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.trend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.trendUp { color: var(--teal); }
+.trendDown { color: var(--red); }
