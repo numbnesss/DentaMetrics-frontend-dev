@@ -1,0 +1,33 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 16px;
+}
+.btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0.5px solid var(--b1);
+  border-radius: var(--rm);
+  background: var(--bg);
+  color: var(--t2);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.active { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
+.active:hover { background: var(--teal); color: #fff; }
+.gap {
+  min-width: 20px;
+  text-align: center;
+  color: var(--t3);
+  font-size: 12px;
+  user-select: none;
+}

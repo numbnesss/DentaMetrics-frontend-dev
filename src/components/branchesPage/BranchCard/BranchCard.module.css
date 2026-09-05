@@ -1,0 +1,66 @@
+.card {
+  background: var(--bg);
+  border: 0.5px solid var(--b1);
+  border-radius: var(--rl);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card:hover { border-color: var(--b2); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.active { border-color: var(--teal); box-shadow: 0 2px 12px rgba(29,158,117,.12); }
+
+.header { display: flex; align-items: center; justify-content: space-between; }
+.name { font-size: 14px; font-weight: 600; color: var(--t1); }
+
+.badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.badgeGreen { background: var(--teal-l); color: var(--teal-d); }
+.badgeBlue  { background: var(--blue-l);  color: var(--blue-d); }
+.badgeAmber { background: var(--amber-l); color: var(--amber-d); }
+
+.ratingRow { display: flex; align-items: center; gap: 10px; }
+.ratingValue { font-size: 24px; font-weight: 700; color: var(--t1); line-height: 1; }
+.ratingMeta { display: flex; flex-direction: column; gap: 2px; }
+.reviewCount { font-size: 11px; color: var(--t3); }
+
+.trend { display: flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 600; }
+.trendUp { color: var(--teal); }
+.trendDown { color: var(--red); }
+
+.miniCards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.miniCard {
+  background: var(--bg2);
+  border-radius: var(--rm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.miniLabel { font-size: 10px; color: var(--t3); }
+.miniValue { font-size: 16px; font-weight: 700; }
+.positive { color: var(--teal); }
+.neutral  { color: var(--gray-d); }
+.negative { color: var(--red); }
+
+.detailsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 8px;
+  background: var(--bg2);
+  border: none;
+  border-radius: var(--rm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.detailsBtn:hover { background: var(--bg3); }
+
+.chevron { font-size: 14px; transition: transform 0.25s; }
+.chevronOpen { transform: rotate(180deg); }

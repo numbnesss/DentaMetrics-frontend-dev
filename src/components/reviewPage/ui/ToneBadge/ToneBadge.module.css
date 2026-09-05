@@ -1,0 +1,25 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.positive {
+  background: var(--teal-l);
+  color: var(--teal-d);
+}
+
+.negative {
+  background: var(--red-l);
+  color: var(--red-d);
+}
+
+.neutral {
+  background: var(--gray-l);
+  color: var(--gray-d);
+}

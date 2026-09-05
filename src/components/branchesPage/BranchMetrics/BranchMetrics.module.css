@@ -1,0 +1,21 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.cell {
+  background: var(--bg2);
+  border-radius: var(--rm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cellHeader { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+.icon { font-size: 16px; color: var(--t3); }
+.sub { font-size: 10px; color: var(--t3); }
+.value { font-size: 22px; font-weight: 700; color: var(--t1); line-height: 1; }
+.label { font-size: 11px; color: var(--t2); }
+.trend { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; margin-top: 2px; }
+.up { color: var(--teal); }
+.down { color: var(--red); }
