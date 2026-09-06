@@ -103,7 +103,14 @@ const DOCTORS = Array.from({ length: 18 }, (_, i) => {
   };
 });
 
-// review store: keyed by branch and doctor
+// --- Reviews ---
+// REVIEW_DOCTOR_IDS: id -> array of assigned doctor ids (internal source of truth, used for
+// filtering AND for rebuilding the display doctor_id field). Kept separate from the review
+// object itself because branch-endpoint reviews must always display doctor_id: null,
+// matching the real backend's documented limitation, while still being filterable server-side.
+const REVIEW_DOCTOR_IDS = new Map();
+const ALL_REVIEWS_BY_ID = new Map();
+
 function pickDoctors() {
   const r = Math.random();
   if (r < 0.35) return [];
@@ -114,7 +121,14 @@ function pickDoctors() {
   return [a, b];
 }
 
-function makeReviews(count, branchName, forDoctor) {
+function doctorRefs(ids) {
+  return ids
+    .map((id) => DOCTORS.find((d) => d.id === id))
+    .filter(Boolean)
+    .map((d) => ({ id: d.id, name: doctorShortName(d) }));
+}
+
+function makeReviews(count, branchName, forDoctor, idKey) {
   return Array.from({ length: count }, (_, i) => {
     const rate = (() => {
       const r = Math.random();
@@ -126,12 +140,17 @@ function makeReviews(count, branchName, forDoctor) {
     const daysAgo = rndInt(0, 340);
     const date = new Date();
     date.setDate(date.getDate() - daysAgo);
-    return {
-      id: `${forDoctor ? 'dr' : 'br'}-${branchName}-${i}`,
+    const id = `${forDoctor ? 'dr' : 'br'}-${idKey}-${i}`;
+    const ids = assignedDoctors.map((d) => d.id);
+    REVIEW_DOCTOR_IDS.set(id, ids);
+
+    const review = {
+      id,
       branch_id: 'branch-1',
       branch_name: branchName,
-      doctor_ids: assignedDoctors.map((d) => d.id),
-      doctor_names: assignedDoctors.map(doctorShortName),
+      // Backend now fills this array correctly for both /branches/:id/reviews
+      // and /doctors/:id/reviews — no longer null on the branch-review path.
+      doctor_id: doctorRefs(ids),
       source_id: source.id,
       source_name: source.code,
       rate,
@@ -142,15 +161,17 @@ function makeReviews(count, branchName, forDoctor) {
       has_response: hasResp,
       response_text: hasResp ? 'Спасибо за ваш отзыв! Будем рады видеть вас снова.' : '',
     };
+    ALL_REVIEWS_BY_ID.set(id, review);
+    return review;
   });
 }
 
 const BRANCH_REVIEWS = {};
-BRANCHES.forEach((b) => { BRANCH_REVIEWS[b.id] = makeReviews(rndInt(30, 120), b.name, null); });
+BRANCHES.forEach((b) => { BRANCH_REVIEWS[b.id] = makeReviews(rndInt(30, 120), b.name, null, b.id); });
 const DOCTOR_REVIEWS = {};
-DOCTORS.forEach((d) => { DOCTOR_REVIEWS[d.id] = makeReviews(rndInt(10, 60), d.branch_name, d); });
+DOCTORS.forEach((d) => { DOCTOR_REVIEWS[d.id] = makeReviews(rndInt(10, 60), d.branch_name, d, d.id); });
 
-// --- Helpers for trend ---
+// --- Trend ---
 function trendBlock() {
   const cur = {
     total_reviews: rndInt(80, 200),
@@ -198,7 +219,7 @@ function applyFilters(list, query) {
     const src = SOURCES.find((s) => s.id === r.source_id);
     return src && src.code === query.source;
   });
-  if (query.doctor_id) out = out.filter((r) => r.doctor_ids.includes(query.doctor_id));
+  if (query.doctor_id) out = out.filter((r) => (REVIEW_DOCTOR_IDS.get(r.id) || []).includes(query.doctor_id));
   out.sort((a, b) => {
     const da = new Date(a.review_date);
     const db = new Date(b.review_date);
@@ -216,52 +237,6 @@ app.get('/api/v1/getMe', (req, res) =>
 
 // --- SOURCES ---
 app.get('/api/v1/sources', (req, res) => res.json({ result: 'success', data: SOURCES }));
-
-// --- RATINGS BY SOURCE (Обзор — блок «Рейтинг по сайтам») ---
-const RATING_SOURCES = [
-  { code: 'google',       name: 'Google',        color: '#FBBC05', scale: 5 },
-  { code: 'yandex',       name: 'Яндекс Карты',  color: '#F8604A', scale: 5 },
-  { code: '2gis',         name: '2ГИС',          color: '#1D9E75', scale: 5 },
-  { code: 'prodoctorov',  name: 'ПроДокторов',   color: '#9F77DD', scale: 5 },
-  { code: '32top',        name: '32топ',         color: '#57B0FF', scale: 5 },
-  { code: 'napopravku',   name: 'НаПоправку',    color: '#2196F3', scale: 5 },
-  { code: 'zoon',         name: 'Zoon',          color: '#FF4D00', scale: 5, noData: true },
-  { code: 'doctu',        name: 'ДокТу',         color: '#4CAF50', scale: 5, noSnapshot: true },
-  { code: 'sberzdorovie', name: 'Сберздоровье',  color: '#21A038', scale: 10 },
-];
-
-function buildSourceRatings() {
-  const sources = RATING_SOURCES.map((s) => {
-    if (s.noData) {
-      return {
-        source_code: s.code,
-        source_name: s.name,
-        color_hex: s.color,
-        scale: s.scale,
-        current_rating: null,
-        review_count: 0,
-        prev_rating: null,
-      };
-    }
-    const max = s.scale === 10 ? 10 : 5;
-    const current = Math.round((max * 0.8 + Math.random() * max * 0.18) * 10) / 10;
-    const prev = s.noSnapshot ? null : Math.round((current - (Math.random() - 0.5) * (max * 0.08)) * 10) / 10;
-    return {
-      source_code: s.code,
-      source_name: s.name,
-      color_hex: s.color,
-      scale: s.scale,
-      current_rating: current,
-      review_count: rndInt(20, 450),
-      prev_rating: prev,
-    };
-  });
-  return { updated_at: new Date().toISOString(), sources };
-}
-
-app.get('/api/v1/overview/ratings-by-source', (req, res) =>
-  res.json({ result: 'success', data: buildSourceRatings() }),
-);
 
 // --- OVERVIEW ---
 function buildOverview() {
@@ -326,11 +301,29 @@ app.get('/api/v1/branches/:id/reviews', (req, res) => {
   res.json({ result: 'success', data: paginate(filtered, req.query.page) });
 });
 
-// --- ASSIGN / UNASSIGN DOCTOR(S) ---
-app.put('/api/v1/reviews/:id/doctors', (req, res) => {
+// --- ASSIGN / UNASSIGN DOCTOR ---
+// Real contract: single doctor per call. Multi-assign is achieved client-side by
+// calling PATCH once per doctor (and DELETE first to clear, when reconciling a
+// changed selection). :id in the URL is unused — review_id comes from the body.
+app.patch('/api/v1/reviews/:id/doctor', (req, res) => {
+  const { doctor_id, review_id } = req.body || {};
+  const review = ALL_REVIEWS_BY_ID.get(review_id);
+  if (!review || !doctor_id) return res.status(400).json({ result: 'error', error: 'bad_request' });
+
+  const ids = REVIEW_DOCTOR_IDS.get(review_id) || [];
+  if (!ids.includes(doctor_id)) ids.push(doctor_id);
+  REVIEW_DOCTOR_IDS.set(review_id, ids);
+  review.doctor_id = doctorRefs(ids);
   res.json({ result: 'success' });
 });
+
 app.delete('/api/v1/reviews/:id/doctor', (req, res) => {
+  const { review_id } = req.body || {};
+  const review = ALL_REVIEWS_BY_ID.get(review_id);
+  if (!review) return res.status(404).json({ result: 'error', error: 'not_found' });
+
+  REVIEW_DOCTOR_IDS.set(review_id, []);
+  review.doctor_id = [];
   res.json({ result: 'success' });
 });
 

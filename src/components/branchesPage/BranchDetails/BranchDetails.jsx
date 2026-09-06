@@ -48,7 +48,8 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
       const response = await apiFetch(`/api/v1/branches/${branch.id}/reviews?${params}`);
       const data = await response.json();
       if (response.ok && data.result === 'success') {
-        setReviews(data.data.reviews ?? []);
+        const normalized = (data.data.reviews ?? []).map((r) => ({ ...r, doctor_id: r.doctor_id ?? [] }));
+        setReviews(normalized);
         setTotalPages(data.data.total_pages ?? 1);
       }
     } catch (error) {
@@ -105,32 +106,18 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
     setAssigningReview(review);
   };
 
-<<<<<<< HEAD
-  const handleSaved = (reviewId, doctorIds, doctorNames) => {
+  const handleSaved = (reviewId, doctorRefs) => {
     setReviews((prev) =>
-      prev.map((r) => (r.id === reviewId ? { ...r, doctor_ids: doctorIds, doctor_names: doctorNames } : r)),
+      prev.map((r) => (r.id === reviewId ? { ...r, doctor_id: doctorRefs } : r)),
     );
-    showToast(doctorIds.length > 0 ? 'Привязка сохранена' : 'Отзыв отвязан от врачей');
-=======
-  const handleAssigned = (reviewId, doctorId, doctorName) => {
-    setReviews((prev) =>
-      prev.map((r) => (r.id === reviewId ? { ...r, doctor_id: doctorId, doctor_name: doctorName } : r)),
-    );
-    showToast('Отзыв привязан к врачу');
->>>>>>> 00fb11a43a2092058793ee323bfde2722945a48a
+    showToast(doctorRefs.length > 0 ? 'Привязка сохранена' : 'Отзыв отвязан от врачей');
   };
 
   const handleUnassigned = (reviewId) => {
     setReviews((prev) =>
-<<<<<<< HEAD
-      prev.map((r) => (r.id === reviewId ? { ...r, doctor_ids: [], doctor_names: [] } : r)),
+      prev.map((r) => (r.id === reviewId ? { ...r, doctor_id: [] } : r)),
     );
     showToast('Отзыв отвязан от врачей');
-=======
-      prev.map((r) => (r.id === reviewId ? { ...r, doctor_id: null, doctor_name: null } : r)),
-    );
-    showToast('Отзыв отвязан от врача');
->>>>>>> 00fb11a43a2092058793ee323bfde2722945a48a
   };
 
   return (
@@ -195,11 +182,7 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
           doctors={doctors}
           branchName={branch.name}
           onClose={() => setAssigningReview(null)}
-<<<<<<< HEAD
           onSaved={handleSaved}
-=======
-          onAssigned={handleAssigned}
->>>>>>> 00fb11a43a2092058793ee323bfde2722945a48a
           onUnassigned={handleUnassigned}
         />
       )}

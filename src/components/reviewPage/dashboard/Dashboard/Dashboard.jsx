@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import KpiGrid from '../KpiGrid/KpiGrid';
-import SourceRatings from '../SourceRatings/SourceRatings';
 import BranchRatings from '../BranchRatings/BranchRatings';
 import DynamicsChart from '../DynamicsChart/DynamicsChart';
 import ReviewFeed from '../ReviewFeed/ReviewFeed';
@@ -74,8 +73,6 @@ export default function Dashboard() {
   const [trendDelta, setTrendDelta] = useState(null);
   const [todayCount, setTodayCount] = useState(undefined);
   const [chartData, setChartData] = useState([]);
-  const [sourceRatings, setSourceRatings] = useState([]);
-  const [sourceRatingsUpdatedAt, setSourceRatingsUpdatedAt] = useState(null);
 
   useEffect(() => {
     fetchOverview();
@@ -86,7 +83,6 @@ export default function Dashboard() {
     fetchChart();
     fetchSources();
     fetchTodayCount();
-    fetchSourceRatings();
   }, []);
 
   const fetchOverview = async () => {
@@ -170,19 +166,6 @@ export default function Dashboard() {
     }
   };
 
-  const fetchSourceRatings = async () => {
-    try {
-      const response = await apiFetch('/api/v1/overview/ratings-by-source');
-      const data = await response.json();
-      if (response.ok && data.result === 'success') {
-        setSourceRatings(data.data.sources ?? []);
-        setSourceRatingsUpdatedAt(data.data.updated_at ?? null);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const sourceMap = useMemo(() => new Map(sources.map((s) => [s.id, s])), [sources]);
 
   const kpiItems = KPI_CONFIG.map((cfg) => ({
@@ -198,8 +181,6 @@ export default function Dashboard() {
     <div className={styles.dashboard}>
       <div className={styles.sectionLabel}>Ключевые показатели · {label}</div>
       <KpiGrid items={kpiItems} />
-
-      <SourceRatings sources={sourceRatings} updatedAt={sourceRatingsUpdatedAt} />
 
       <ReviewFeed
         title="Последние отзывы"

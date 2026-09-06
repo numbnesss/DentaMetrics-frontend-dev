@@ -41,24 +41,24 @@ export default function ReviewCard({ review, source, isAdmin, onAssignClick }) {
       <div className={styles.footer}>
         <ToneBadge tone={tone} />
 
-        {(review.doctor_names ?? []).length > 0 ? (
+        {(review.doctor_id ?? []).length > 0 ? (
           <div className={styles.doctorBadges}>
-            {review.doctor_names.map((name, i) =>
+            {review.doctor_id.map((doc) =>
               isAdmin ? (
                 <button
-                  key={i}
+                  key={doc.id}
                   type="button"
                   className={`${styles.assignedBadge} ${styles.clickable}`}
                   onClick={onAssignClick}
                   title="Изменить привязку"
                 >
                   <i className="ti ti-stethoscope" style={{ fontSize: 12 }} />
-                  {name}
+                  {doc.name}
                 </button>
               ) : (
-                <span key={i} className={styles.assignedBadge}>
+                <span key={doc.id} className={styles.assignedBadge}>
                   <i className="ti ti-stethoscope" style={{ fontSize: 12 }} />
-                  {name}
+                  {doc.name}
                 </span>
               ),
             )}

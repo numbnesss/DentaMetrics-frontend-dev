@@ -12,7 +12,8 @@ function doctorShortName(doctor) {
 }
 
 export default function AssignModal({ review, doctors, branchName, onClose, onSaved, onUnassigned }) {
-  const [selectedIds, setSelectedIds] = useState(() => new Set(review.doctor_ids ?? []));
+  const initialIds = useMemo(() => new Set((review.doctor_id ?? []).map((d) => d.id)), [review.doctor_id]);
+  const [selectedIds, setSelectedIds] = useState(() => new Set(initialIds));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,26 +33,52 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
   };
 
   const handleSave = async () => {
+    const finalIds = Array.from(selectedIds);
+    const unchanged =
+      initialIds.size === selectedIds.size && Array.from(initialIds).every((id) => selectedIds.has(id));
+
+    if (unchanged) {
+      onClose();
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
-      const doctorIds = Array.from(selectedIds);
-      const response = await apiFetch(`/api/v1/reviews/${review.id}/doctors`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ doctor_ids: doctorIds, review_id: review.id }),
-      });
-      const data = await response.json();
-      if (response.ok && data.result === 'success') {
-        const names = doctorIds
-          .map((id) => doctors.find((d) => d.id === id))
-          .filter(Boolean)
-          .map(doctorShortName);
-        onSaved(review.id, doctorIds, names);
-        onClose();
-      } else {
-        setError('Не удалось сохранить привязку');
+      if (initialIds.size > 0) {
+        const delResponse = await apiFetch(`/api/v1/reviews/${review.id}/doctor`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ review_id: review.id }),
+        });
+        const delData = await delResponse.json();
+        if (!delResponse.ok || delData.result !== 'success') {
+          setError('Не удалось сохранить привязку');
+          setSaving(false);
+          return;
+        }
       }
+
+      for (const doctorId of finalIds) {
+        const response = await apiFetch(`/api/v1/reviews/${review.id}/doctor`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doctor_id: doctorId, review_id: review.id }),
+        });
+        const data = await response.json();
+        if (!response.ok || data.result !== 'success') {
+          setError('Не удалось сохранить привязку полностью');
+          setSaving(false);
+          return;
+        }
+      }
+
+      const assignedRefs = finalIds
+        .map((id) => doctors.find((d) => d.id === id))
+        .filter(Boolean)
+        .map((d) => ({ id: d.id, name: doctorShortName(d) }));
+      onSaved(review.id, assignedRefs);
+      onClose();
     } catch (err) {
       console.error(err);
       setError('Не удалось сохранить привязку');
@@ -85,7 +112,7 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
     }
   };
 
-  const hasAssigned = (review.doctor_ids ?? []).length > 0;
+  const hasAssigned = (review.doctor_id ?? []).length > 0;
 
   const renderDoctorRow = (d, showBranch) => {
     const checked = selectedIds.has(d.id);
