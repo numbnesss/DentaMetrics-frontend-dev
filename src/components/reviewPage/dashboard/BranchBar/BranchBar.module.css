@@ -19,6 +19,12 @@
   text-overflow: ellipsis;
 }
 
+@media (max-width: 480px) {
+  .name {
+    width: 90px;
+  }
+}
+
 .track {
   flex: 1;
   height: 8px;

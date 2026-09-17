@@ -64,3 +64,10 @@
 
 .chevron { font-size: 14px; transition: transform 0.25s; }
 .chevronOpen { transform: rotate(180deg); }
+
+@media (max-width: 480px) {
+  .card { padding: 14px; gap: 10px; }
+  .ratingValue { font-size: 20px; }
+  .miniCard { padding: 6px 8px; }
+  .miniValue { font-size: 14px; }
+}

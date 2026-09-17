@@ -84,3 +84,38 @@
   from { opacity: 0; transform: translate(-50%, 8px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
+
+@media (max-width: 768px) {
+  .wrap {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .body {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sideSection {
+    flex: 1 1 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 14px;
+  }
+
+  .toast {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    width: auto;
+    justify-content: center;
+  }
+}

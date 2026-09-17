@@ -124,3 +124,13 @@
   line-height: 1.6;
   text-align: center;
 }
+
+@media (max-width: 480px) {
+  .screen {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 24px 18px;
+  }
+}

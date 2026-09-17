@@ -133,3 +133,11 @@
 
 .trendUp { color: var(--teal); }
 .trendDown { color: var(--red); }
+
+@media (max-width: 480px) {
+  .card { padding: 14px; gap: 12px; }
+  .avatar { width: 38px; height: 38px; font-size: 13px; }
+  .ratingValue { font-size: 28px; }
+  .miniCard { padding: 6px 8px; }
+  .miniValue { font-size: 14px; }
+}

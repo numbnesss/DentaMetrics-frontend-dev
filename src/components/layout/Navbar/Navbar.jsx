@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { usePeriod } from '../../../context/PeriodContext';
 import { useAuth } from '../../../context/AuthContext';
+import logo from '../../../assets/logo.png';
 import styles from './Navbar.module.css';
 
 const LINKS = [
@@ -120,7 +121,7 @@ export default function Navbar() {
     <header className={styles.navbar}>
       <div className={styles.inner}>
         <div className={styles.logo}>
-          <i className={`ti ti-tooth ${styles.logoIcon}`} />
+          <img src={logo} alt="" className={styles.logoIcon} />
           <span className={styles.logoText}>DentaMetric</span>
         </div>
 

@@ -66,3 +66,13 @@
   flex-shrink: 0;
 }
 .select:focus { border-color: var(--teal); }
+
+@media (max-width: 480px) {
+  .searchWrap {
+    min-width: 100%;
+  }
+
+  .select {
+    flex: 1;
+  }
+}

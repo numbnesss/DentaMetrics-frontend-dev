@@ -11,6 +11,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pageTitle {
@@ -49,4 +50,17 @@
 
 .empty i {
   font-size: 36px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 14px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

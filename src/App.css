@@ -37,6 +37,10 @@
     padding: 0;
 }
 
+html {
+    overflow-x: hidden;
+}
+
 body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg3);
@@ -44,6 +48,7 @@ body {
     font-size: 15px;
     line-height: 1.55;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 .app {
@@ -53,4 +58,17 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .app {
+        padding: 14px;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
 }

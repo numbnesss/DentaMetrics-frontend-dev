@@ -19,3 +19,9 @@
   font-weight: 600;
   color: var(--t1);
 }
+
+@media (max-width: 480px) {
+  .section {
+    padding: 12px;
+  }
+}

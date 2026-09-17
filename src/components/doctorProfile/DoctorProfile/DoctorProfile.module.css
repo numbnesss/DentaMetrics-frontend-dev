@@ -17,6 +17,18 @@
 .left { display: flex; flex-direction: column; min-width: 0; }
 .right { display: flex; flex-direction: column; min-width: 0; }
 
+@media (max-width: 768px) {
+  .page {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .body {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
 .notFound {
   display: flex;
   flex-direction: column;

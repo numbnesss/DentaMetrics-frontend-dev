@@ -28,8 +28,10 @@
 }
 
 .logoIcon {
-  font-size: 26px;
-  color: var(--teal);
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .logoText {
@@ -247,4 +249,81 @@
 .logout:hover {
   background: var(--red-l);
   color: var(--red-d);
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    height: auto;
+  }
+
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    height: auto;
+    padding: 10px 14px;
+    gap: 10px 14px;
+  }
+
+  .logo {
+    order: 1;
+  }
+
+  .right {
+    order: 2;
+  }
+
+  .links {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .link {
+    flex-shrink: 0;
+  }
+
+  .periodMenu,
+  .userMenu {
+    right: -10px;
+    max-width: calc(100vw - 28px);
+  }
+}
+
+@media (max-width: 480px) {
+  .inner {
+    padding: 8px 12px;
+  }
+
+  .logoIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .logoText {
+    font-size: 15px;
+  }
+
+  .link {
+    padding: 6px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .periodBtn span {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .periodMenu,
+  .userMenu {
+    min-width: 160px;
+    right: -8px;
+  }
 }

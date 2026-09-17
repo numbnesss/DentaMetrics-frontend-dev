@@ -3,3 +3,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+
+@media (max-width: 768px) {
+  .section {
+    grid-template-columns: 1fr;
+  }
+}
