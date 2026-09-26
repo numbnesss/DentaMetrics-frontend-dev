@@ -9,10 +9,10 @@
 }
 
 .inner {
-  max-width: 1160px;
+  max-width: 1100px;
   margin: 0 auto;
   height: 56px;
-  padding: 0 24px;
+  padding: 0 20px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
