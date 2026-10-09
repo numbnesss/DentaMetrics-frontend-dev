@@ -237,3 +237,38 @@
     font-size: 28px;
   }
 }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.archiveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 0.5px solid var(--b2);
+  border-radius: var(--rm);
+  color: var(--t2);
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.archiveBtn:hover:not(:disabled) { color: var(--t1); border-color: var(--b3); }
+.archiveBtn:disabled { opacity: 0.6; cursor: default; }
+
+.archivedBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gray-l);
+  color: var(--gray-d);
+  font-size: 12px;
+  font-weight: 500;
+  vertical-align: middle;
+}

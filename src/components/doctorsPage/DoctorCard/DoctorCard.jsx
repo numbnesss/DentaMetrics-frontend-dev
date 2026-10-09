@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import StarRating from '../../reviewPage/ui/StarRating/StarRating';
-import { avatarStyle, doctorAvatarColor } from '../../../data/clinic';
+import { avatarStyle, doctorAvatarColor, doctorBranchesLabel } from '../../../data/clinic';
 import styles from './DoctorCard.module.css';
 
 function doctorName(doctor) {
@@ -25,7 +25,7 @@ export default function DoctorCard({ doctor }) {
           <div className={styles.name}>{doctorName(doctor)}</div>
           <div className={styles.branch}>
             <i className="ti ti-building-hospital" />
-            {doctor.branch_name || 'Филиал не указан'}
+            {doctorBranchesLabel(doctor)}
           </div>
         </div>
       </div>

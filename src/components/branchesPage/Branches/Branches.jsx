@@ -6,7 +6,7 @@ import { apiFetch } from '../../../api/apiFetch';
 import styles from './Branches.module.css';
 
 export default function Branches() {
-  const { label, periodDays, dateRange, prevRange, isAllTime } = usePeriod();
+  const { label, periodDays, periodQuery, dateRange, prevRange, isAllTime } = usePeriod();
   const [branches, setBranches] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [sources, setSources] = useState([]);
@@ -29,7 +29,7 @@ export default function Branches() {
 
   const fetchBranches = async () => {
     try {
-      const url = isAllTime ? '/api/v1/branches/alltime' : `/api/v1/branches?period_days=${periodDays}`;
+      const url = `/api/v1/branches?${periodQuery}`;
       const response = await apiFetch(url);
       const data = await response.json();
       if (response.ok && data.result === 'success') {
@@ -64,7 +64,7 @@ export default function Branches() {
 
   const fetchDoctors = async () => {
     try {
-      const url = isAllTime ? '/api/v1/doctors/alltime' : `/api/v1/doctors?period_days=${periodDays}`;
+      const url = `/api/v1/doctors?${periodQuery}`;
       const response = await apiFetch(url);
       const data = await response.json();
       if (response.ok && data.result === 'success') {

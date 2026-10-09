@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { apiFetch } from '../../../api/apiFetch';
+import { doctorBranchesLabel, doctorWorksIn } from '../../../data/clinic';
 import styles from './AssignModal.module.css';
 
 function doctorShortName(doctor) {
@@ -18,8 +19,8 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
   const [error, setError] = useState('');
 
   const { ownDoctors, otherDoctors } = useMemo(() => {
-    const own = doctors.filter((d) => d.branch_name === branchName);
-    const others = doctors.filter((d) => d.branch_name !== branchName);
+    const own = doctors.filter((d) => doctorWorksIn(d, branchName));
+    const others = doctors.filter((d) => !doctorWorksIn(d, branchName));
     return { ownDoctors: own, otherDoctors: others };
   }, [doctors, branchName]);
 
@@ -32,12 +33,17 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
     });
   };
 
-  const handleSave = async () => {
-    const finalIds = Array.from(selectedIds);
-    const unchanged =
-      initialIds.size === selectedIds.size && Array.from(initialIds).every((id) => selectedIds.has(id));
+  const linkDoctor = async (method, doctorId) => {
+    const response = await apiFetch(`/api/v1/reviews/${review.id}/doctor/${doctorId}`, { method });
+    const data = await response.json().catch(() => ({}));
+    return response.ok && data.result === 'success';
+  };
 
-    if (unchanged) {
+  const handleSave = async () => {
+    const toRemove = Array.from(initialIds).filter((id) => !selectedIds.has(id));
+    const toAdd = Array.from(selectedIds).filter((id) => !initialIds.has(id));
+
+    if (toRemove.length === 0 && toAdd.length === 0) {
       onClose();
       return;
     }
@@ -45,38 +51,28 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
     setSaving(true);
     setError('');
     try {
-      if (initialIds.size > 0) {
-        const delResponse = await apiFetch(`/api/v1/reviews/${review.id}/doctor`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ review_id: review.id }),
-        });
-        const delData = await delResponse.json();
-        if (!delResponse.ok || delData.result !== 'success') {
+      for (const doctorId of toRemove) {
+        if (!(await linkDoctor('DELETE', doctorId))) {
           setError('Не удалось сохранить привязку');
-          setSaving(false);
           return;
         }
       }
 
-      for (const doctorId of finalIds) {
-        const response = await apiFetch(`/api/v1/reviews/${review.id}/doctor`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ doctor_id: doctorId, review_id: review.id }),
-        });
-        const data = await response.json();
-        if (!response.ok || data.result !== 'success') {
+      for (const doctorId of toAdd) {
+        if (!(await linkDoctor('PATCH', doctorId))) {
           setError('Не удалось сохранить привязку полностью');
-          setSaving(false);
           return;
         }
       }
 
-      const assignedRefs = finalIds
-        .map((id) => doctors.find((d) => d.id === id))
-        .filter(Boolean)
-        .map((d) => ({ id: d.id, name: doctorShortName(d) }));
+      const knownRefs = new Map((review.doctor_id ?? []).map((d) => [d.id, d]));
+      const assignedRefs = Array.from(selectedIds)
+        .map((id) => {
+          const doctor = doctors.find((d) => d.id === id);
+          if (doctor) return { id: doctor.id, name: doctorShortName(doctor) };
+          return knownRefs.get(id);
+        })
+        .filter(Boolean);
       onSaved(review.id, assignedRefs);
       onClose();
     } catch (err) {
@@ -91,19 +87,15 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
     setSaving(true);
     setError('');
     try {
-      const response = await apiFetch(`/api/v1/reviews/${review.id}/doctor`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ review_id: review.id }),
-      });
-      const data = await response.json();
-      if (response.ok && data.result === 'success') {
-        setSelectedIds(new Set());
-        onUnassigned(review.id);
-        onClose();
-      } else {
-        setError('Не удалось отвязать врачей');
+      for (const doctorId of initialIds) {
+        if (!(await linkDoctor('DELETE', doctorId))) {
+          setError('Не удалось отвязать врачей');
+          return;
+        }
       }
+      setSelectedIds(new Set());
+      onUnassigned(review.id);
+      onClose();
     } catch (err) {
       console.error(err);
       setError('Не удалось отвязать врачей');
@@ -129,7 +121,7 @@ export default function AssignModal({ review, doctors, branchName, onClose, onSa
         </span>
         <i className="ti ti-stethoscope" />
         <span className={styles.doctorName}>{doctorShortName(d)}</span>
-        {showBranch && <span className={styles.doctorBranch}>{d.branch_name || 'Филиал не указан'}</span>}
+        {showBranch && <span className={styles.doctorBranch}>{doctorBranchesLabel(d)}</span>}
       </button>
     );
   };

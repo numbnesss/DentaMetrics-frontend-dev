@@ -39,6 +39,8 @@ export function PeriodProvider({ children }) {
     return PERIOD_DAYS[period] ?? 31;
   }, [period, range, isAllTime]);
 
+  const periodQuery = `period_days=${isAllTime ? 'alltime' : periodDays}`;
+
   const dateRange = useMemo(() => {
     if (isAllTime) {
       return { from: '', to: toISODate(new Date()) };
@@ -72,13 +74,14 @@ export function PeriodProvider({ children }) {
       range,
       setRange,
       periodDays,
+      periodQuery,
       dateRange,
       prevRange,
       isAllTime,
       label: periodLabel(period),
       periods: PERIODS,
     }),
-    [period, range, periodDays, dateRange, prevRange, isAllTime],
+    [period, range, periodDays, periodQuery, dateRange, prevRange, isAllTime],
   );
 
   return <PeriodContext.Provider value={value}>{children}</PeriodContext.Provider>;

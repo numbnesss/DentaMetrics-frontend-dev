@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import StarRating from '../../reviewPage/ui/StarRating/StarRating';
-import { avatarStyle, doctorAvatarColor } from '../../../data/clinic';
+import { avatarStyle, doctorAvatarColor, doctorBranchesLabel } from '../../../data/clinic';
 import styles from './ProfileHeader.module.css';
 
 function doctorName(doctor) {
@@ -19,7 +19,7 @@ function formatDelta(key, value) {
   return { isUp, text: `отзывов ${sign}${value} за период` };
 }
 
-export default function ProfileHeader({ doctor, trend }) {
+export default function ProfileHeader({ doctor, trend, status, canArchive, archiving, onToggleArchive }) {
   const navigate = useNavigate();
   const rating = doctor.avg_rate ?? 0;
   const ratingDelta = formatDelta('rating', trend?.avg_doctor_rating);
@@ -27,10 +27,18 @@ export default function ProfileHeader({ doctor, trend }) {
 
   return (
     <div className={styles.wrap}>
-      <button className={styles.backBtn} onClick={() => navigate('/doctors')}>
-        <i className="ti ti-arrow-left" />
-        Назад к врачам
-      </button>
+      <div className={styles.toolbar}>
+        <button className={styles.backBtn} onClick={() => navigate('/doctors')}>
+          <i className="ti ti-arrow-left" />
+          Назад к врачам
+        </button>
+        {canArchive && (
+          <button className={styles.archiveBtn} onClick={onToggleArchive} disabled={archiving}>
+            <i className={`ti ${status === 'archived' ? 'ti-archive-off' : 'ti-archive'}`} />
+            {status === 'archived' ? 'Вернуть из архива' : 'В архив'}
+          </button>
+        )}
+      </div>
 
       <div className={styles.card}>
         <div className={styles.topRow}>
@@ -39,10 +47,13 @@ export default function ProfileHeader({ doctor, trend }) {
               {doctorInitials(doctor)}
             </div>
             <div className={styles.identity}>
-              <div className={styles.name}>{doctorName(doctor)}</div>
+              <div className={styles.name}>
+                {doctorName(doctor)}
+                {status === 'archived' && <span className={styles.archivedBadge}>Архив</span>}
+              </div>
               <div className={styles.branch}>
                 <i className="ti ti-building-hospital" />
-                {doctor.branch_name || 'Филиал не указан'}
+                {doctorBranchesLabel(doctor)}
               </div>
             </div>
           </div>

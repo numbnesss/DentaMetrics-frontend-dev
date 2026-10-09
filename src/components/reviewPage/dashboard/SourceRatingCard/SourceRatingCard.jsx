@@ -10,9 +10,16 @@ function trendArrow(current, prev) {
   return 'flat';
 }
 
-export default function SourceRatingCard({ source, snapshotLabel }) {
-  const hasData = source.current_rating !== null && source.current_rating !== undefined;
-  const hasPrev = source.prev_rating !== null && source.prev_rating !== undefined;
+function toNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+export default function SourceRatingCard({ source: raw, snapshotLabel }) {
+  const source = { ...raw, current_rating: toNumber(raw.current_rating), prev_rating: toNumber(raw.prev_rating) };
+  const hasData = source.current_rating !== null;
+  const hasPrev = source.prev_rating !== null;
   const scale = source.scale ?? 5;
   const starValue = hasData ? (scale === 10 ? source.current_rating / 2 : source.current_rating) : 0;
   const arrow = hasPrev ? trendArrow(source.current_rating, source.prev_rating) : null;
@@ -28,7 +35,7 @@ export default function SourceRatingCard({ source, snapshotLabel }) {
 
       <StarRating value={hasData ? Math.round(starValue) : 0} size={12} color={hasData ? source.color_hex : undefined} />
 
-      <div className={styles.count}>{hasData ? `${source.review_count} отзывов` : 'Нет отзывов'}</div>
+      <div className={styles.count}>{!hasData ? 'Нет отзывов' : source.review_count != null ? `${source.review_count} отзывов` : ''}</div>
 
       <div className={styles.divider} />
 

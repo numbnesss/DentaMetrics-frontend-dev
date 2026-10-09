@@ -40,3 +40,18 @@ export function avatarColor(seed) {
 }
 
 export const doctorAvatarColor = avatarColor;
+
+export function doctorBranches(doctor) {
+  const value = doctor?.branch_name;
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return value ? [value] : [];
+}
+
+export function doctorBranchesLabel(doctor) {
+  const list = doctorBranches(doctor);
+  return list.length > 0 ? list.join(', ') : 'Филиал не указан';
+}
+
+export function doctorWorksIn(doctor, branchName) {
+  return doctorBranches(doctor).includes(branchName);
+}

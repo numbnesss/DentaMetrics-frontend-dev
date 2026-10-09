@@ -5,17 +5,37 @@ import ProfileStats from '../ProfileStats/ProfileStats';
 import ProfileReviews from '../ProfileReviews/ProfileReviews';
 import { usePeriod } from '../../../context/PeriodContext';
 import { apiFetch } from '../../../api/apiFetch';
+import { useAuth } from '../../../context/AuthContext';
 import styles from './DoctorProfile.module.css';
 
 export default function DoctorProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { periodDays, dateRange, prevRange, isAllTime } = usePeriod();
+  const { periodDays, periodQuery, dateRange, prevRange, isAllTime } = usePeriod();
 
   const [doctor, setDoctor] = useState(null);
   const [sources, setSources] = useState([]);
   const [trend, setTrend] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState(null);
+  const [archiving, setArchiving] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch(`/api/v1/doctors/${id}`)
+      .then((response) => response.json().then((data) => ({ response, data })))
+      .then(({ response, data }) => {
+        if (!cancelled && response.ok && data.result === 'success') {
+          setStatus(data.data.status ?? null);
+        }
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   useEffect(() => {
     fetchDoctor();
@@ -29,7 +49,7 @@ export default function DoctorProfile() {
   const fetchDoctor = async () => {
     setLoading(true);
     try {
-      const url = isAllTime ? '/api/v1/doctors/alltime' : `/api/v1/doctors?period_days=${periodDays}`;
+      const url = `/api/v1/doctors?${periodQuery}`;
       const response = await apiFetch(url);
       const data = await response.json();
       if (response.ok && data.result === 'success') {
@@ -39,6 +59,26 @@ export default function DoctorProfile() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleArchive = async () => {
+    const action = status === 'archived' ? 'unarchive' : 'archive';
+    setArchiving(true);
+    try {
+      const response = await apiFetch(`/api/v1/doctors/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doctor_id: id }),
+      });
+      const data = await response.json();
+      if (response.ok && data.result === 'success') {
+        setStatus(action === 'archive' ? 'archived' : 'active');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -106,7 +146,14 @@ export default function DoctorProfile() {
 
   return (
     <div className={styles.page}>
-      <ProfileHeader doctor={doctor} trend={trend} />
+      <ProfileHeader
+        doctor={doctor}
+        trend={trend}
+        status={status}
+        canArchive={isAdmin && status !== null}
+        archiving={archiving}
+        onToggleArchive={toggleArchive}
+      />
 
       <div className={styles.body}>
         <div className={styles.left}>

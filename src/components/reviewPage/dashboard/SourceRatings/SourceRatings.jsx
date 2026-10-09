@@ -37,7 +37,7 @@ export default function SourceRatings({ sources, updatedAt }) {
 
       <div className={styles.grid}>
         {sources.map((s) => (
-          <SourceRatingCard key={s.source_code} source={s} snapshotLabel={snapshotLabel} />
+          <SourceRatingCard key={s.source_id ?? s.source_name} source={s} snapshotLabel={snapshotLabel} />
         ))}
       </div>
     </div>

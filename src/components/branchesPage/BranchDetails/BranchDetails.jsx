@@ -9,6 +9,7 @@ import AssignModal from '../AssignModal/AssignModal';
 import { useAuth } from '../../../context/AuthContext';
 import { usePeriod } from '../../../context/PeriodContext';
 import { apiFetch } from '../../../api/apiFetch';
+import { doctorWorksIn } from '../../../data/clinic';
 import styles from './BranchDetails.module.css';
 
 export default function BranchDetails({ branch, doctors, sources, onClose }) {
@@ -79,7 +80,7 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
   };
 
   const sourceMap = useMemo(() => new Map(sources.map((s) => [s.id, s])), [sources]);
-  const branchDoctors = useMemo(() => doctors.filter((d) => d.branch_name === branch.name), [doctors, branch.name]);
+  const branchDoctors = useMemo(() => doctors.filter((d) => doctorWorksIn(d, branch.name)), [doctors, branch.name]);
 
   const sourceDistribution = useMemo(
     () =>

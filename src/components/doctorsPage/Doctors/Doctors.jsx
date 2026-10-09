@@ -3,6 +3,7 @@ import DoctorCard from '../DoctorCard/DoctorCard';
 import DoctorsFilters from '../DoctorsFilters/DoctorsFilters';
 import { usePeriod } from '../../../context/PeriodContext';
 import { apiFetch } from '../../../api/apiFetch';
+import { doctorBranches, doctorWorksIn } from '../../../data/clinic';
 import styles from './Doctors.module.css';
 
 const SORT_FN = {
@@ -13,7 +14,7 @@ const SORT_FN = {
 };
 
 export default function Doctors() {
-  const { periodDays, isAllTime } = usePeriod();
+  const { periodDays, periodQuery, isAllTime } = usePeriod();
   const [doctors, setDoctors] = useState([]);
   const [search, setSearch]   = useState('');
   const [branch, setBranch]   = useState('Все филиалы');
@@ -25,7 +26,7 @@ export default function Doctors() {
 
   const fetchDoctors = async () => {
     try {
-      const url = isAllTime ? '/api/v1/doctors/alltime' : `/api/v1/doctors?period_days=${periodDays}`;
+      const url = `/api/v1/doctors?${periodQuery}`;
       const response = await apiFetch(url);
       const data = await response.json();
       if (response.ok && data.result === 'success') {
@@ -37,7 +38,7 @@ export default function Doctors() {
   };
 
   const branches = useMemo(
-    () => ['Все филиалы', ...Array.from(new Set(doctors.map((d) => d.branch_name).filter(Boolean)))],
+    () => ['Все филиалы', ...Array.from(new Set(doctors.flatMap(doctorBranches)))],
     [doctors],
   );
 
@@ -47,7 +48,7 @@ export default function Doctors() {
       const q = search.toLowerCase();
       list = list.filter((d) => `${d.last_name} ${d.first_name} ${d.patronymic ?? ''}`.toLowerCase().includes(q));
     }
-    if (branch !== 'Все филиалы') list = list.filter((d) => d.branch_name === branch);
+    if (branch !== 'Все филиалы') list = list.filter((d) => doctorWorksIn(d, branch));
     return list.sort(SORT_FN[sort]);
   }, [doctors, search, branch, sort]);
 

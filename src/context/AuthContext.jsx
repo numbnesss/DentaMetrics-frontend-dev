@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/auth/logout', { credentials: 'include' });
+      await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (error) {
       console.error(error);
     }

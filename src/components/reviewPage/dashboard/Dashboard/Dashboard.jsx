@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import KpiGrid from '../KpiGrid/KpiGrid';
+import SourceRatings from '../SourceRatings/SourceRatings';
 import BranchRatings from '../BranchRatings/BranchRatings';
 import DynamicsChart from '../DynamicsChart/DynamicsChart';
 import ReviewFeed from '../ReviewFeed/ReviewFeed';
@@ -65,7 +66,7 @@ function todayISO() {
 }
 
 export default function Dashboard() {
-  const { label, periodDays, dateRange, prevRange, isAllTime } = usePeriod();
+  const { label, periodDays, periodQuery, dateRange, prevRange, isAllTime } = usePeriod();
   const [overview, setOverview] = useState(null);
   const [latestReviews, setLatestReviews] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -73,6 +74,8 @@ export default function Dashboard() {
   const [trendDelta, setTrendDelta] = useState(null);
   const [todayCount, setTodayCount] = useState(undefined);
   const [chartData, setChartData] = useState([]);
+  const [sourceRatings, setSourceRatings] = useState([]);
+  const [sourceRatingsUpdatedAt, setSourceRatingsUpdatedAt] = useState(null);
 
   useEffect(() => {
     fetchOverview();
@@ -82,12 +85,13 @@ export default function Dashboard() {
   useEffect(() => {
     fetchChart();
     fetchSources();
+    fetchSourceRatings();
     fetchTodayCount();
   }, []);
 
   const fetchOverview = async () => {
     try {
-      const url = isAllTime ? '/api/v1/overview/alltime' : `/api/v1/overview?period_days=${periodDays}`;
+      const url = `/api/v1/overview?${periodQuery}`;
       const response = await apiFetch(url);
       const data = await response.json();
       if (response.ok && data.result === 'success') {
@@ -154,6 +158,20 @@ export default function Dashboard() {
     }
   };
 
+  const fetchSourceRatings = async () => {
+    try {
+      const response = await apiFetch('/api/v1/overview/avgrate');
+      const data = await response.json();
+      if (response.ok && data.result === 'success') {
+        const payload = data.data;
+        setSourceRatings(Array.isArray(payload) ? payload : payload?.sources ?? []);
+        setSourceRatingsUpdatedAt(Array.isArray(payload) ? null : payload?.updated_at ?? null);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const fetchSources = async () => {
     try {
       const response = await apiFetch('/api/v1/sources');
@@ -168,6 +186,12 @@ export default function Dashboard() {
 
   const sourceMap = useMemo(() => new Map(sources.map((s) => [s.id, s])), [sources]);
 
+  const sourceRatingCards = sourceRatings.map((r) => ({
+    ...r,
+    current_rating: r.avg_rating ?? r.current_rating,
+    color_hex: sourceMap.get(r.source_id)?.color_hex,
+  }));
+
   const kpiItems = KPI_CONFIG.map((cfg) => ({
     icon: cfg.icon,
     label: cfg.label,
@@ -181,6 +205,8 @@ export default function Dashboard() {
     <div className={styles.dashboard}>
       <div className={styles.sectionLabel}>Ключевые показатели · {label}</div>
       <KpiGrid items={kpiItems} />
+
+      <SourceRatings sources={sourceRatingCards} updatedAt={sourceRatingsUpdatedAt} />
 
       <ReviewFeed
         title="Последние отзывы"
