@@ -9,7 +9,9 @@ function doctorShortName(doctor) {
   return parts.filter(Boolean).join(' ');
 }
 
-export default function ReviewFilters({ filters, onChange, sources, doctors }) {
+export default function ReviewFilters({ filters, onChange, sources, doctors, branches, onReset }) {
+  const hasBranchFilter = Array.isArray(branches);
+
   return (
     <div className={styles.wrap}>
       <div className={styles.filters}>
@@ -34,6 +36,19 @@ export default function ReviewFilters({ filters, onChange, sources, doctors }) {
           ))}
         </select>
 
+        {hasBranchFilter && (
+          <select
+            className={styles.select}
+            value={filters.branch}
+            onChange={(e) => onChange({ ...filters, branch: e.target.value, doctor: 'all' })}
+          >
+            <option value="all">Все филиалы</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        )}
+
         <select
           className={styles.select}
           value={filters.doctor}
@@ -53,6 +68,13 @@ export default function ReviewFilters({ filters, onChange, sources, doctors }) {
           <option value="newest">Сначала новые</option>
           <option value="oldest">Сначала старые</option>
         </select>
+
+        {onReset && (
+          <button type="button" className={styles.reset} onClick={onReset}>
+            <i className="ti ti-x" />
+            Сбросить
+          </button>
+        )}
       </div>
     </div>
   );

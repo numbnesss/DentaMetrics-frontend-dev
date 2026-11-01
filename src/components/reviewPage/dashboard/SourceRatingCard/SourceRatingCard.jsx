@@ -5,8 +5,10 @@ const ARROW_ICON = { up: 'ti-arrow-up', down: 'ti-arrow-down', flat: 'ti-arrow-r
 
 function trendArrow(current, prev) {
   if (current === null || current === undefined || prev === null || prev === undefined) return null;
-  if (current > prev) return 'up';
-  if (current < prev) return 'down';
+  const a = Math.round(current * 10);
+  const b = Math.round(prev * 10);
+  if (a > b) return 'up';
+  if (a < b) return 'down';
   return 'flat';
 }
 

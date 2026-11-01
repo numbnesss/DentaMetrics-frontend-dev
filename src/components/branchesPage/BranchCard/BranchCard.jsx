@@ -1,4 +1,5 @@
 import StarDistribution from '../StarDistribution/StarDistribution';
+import { deltaInfo, DELTA_ICON } from '../../../data/clinic';
 import styles from './BranchCard.module.css';
 
 function getRatingClass(rating) {
@@ -13,11 +14,12 @@ function getRatingLabel(rating) {
   return 'Низкий';
 }
 
+const TREND_CLASS = { up: styles.trendUp, down: styles.trendDown, flat: styles.trendFlat };
+
 function formatDelta(value) {
-  if (value === undefined || value === null) return null;
-  const isUp = value >= 0;
-  const sign = isUp ? '+' : '';
-  return { isUp, text: `${sign}${value} за период` };
+  const info = deltaInfo(value, 0);
+  if (!info) return null;
+  return { direction: info.direction, text: `${info.text} за период` };
 }
 
 export default function BranchCard({ branch, isOpen, onClick }) {
@@ -38,8 +40,8 @@ export default function BranchCard({ branch, isOpen, onClick }) {
         <div className={styles.ratingMeta}>
           <span className={styles.reviewCount}>{branch.total_reviews ?? 0} отзывов</span>
           {delta && (
-            <span className={`${styles.trend} ${delta.isUp ? styles.trendUp : styles.trendDown}`}>
-              <i className={`ti ti-arrow-${delta.isUp ? 'up' : 'down'}`} />
+            <span className={`${styles.trend} ${TREND_CLASS[delta.direction]}`}>
+              <i className={`ti ${DELTA_ICON[delta.direction]}`} />
               {delta.text}
             </span>
           )}

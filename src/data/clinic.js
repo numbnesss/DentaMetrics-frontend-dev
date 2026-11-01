@@ -43,7 +43,7 @@ export const doctorAvatarColor = avatarColor;
 
 export function doctorBranches(doctor) {
   const value = doctor?.branch_name;
-  if (Array.isArray(value)) return value.filter(Boolean);
+  if (Array.isArray(value)) return Array.from(new Set(value.filter(Boolean)));
   return value ? [value] : [];
 }
 
@@ -54,4 +54,17 @@ export function doctorBranchesLabel(doctor) {
 
 export function doctorWorksIn(doctor, branchName) {
   return doctorBranches(doctor).includes(branchName);
+}
+
+export const DELTA_ICON = { up: 'ti-arrow-up', down: 'ti-arrow-down', flat: 'ti-arrow-right' };
+
+export function deltaInfo(value, digits = 0) {
+  if (value === undefined || value === null) return null;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  const factor = 10 ** digits;
+  const rounded = Math.round(number * factor) / factor;
+  const direction = rounded > 0 ? 'up' : rounded < 0 ? 'down' : 'flat';
+  const sign = rounded > 0 ? '+' : '';
+  return { direction, text: `${sign}${(rounded === 0 ? 0 : rounded).toFixed(digits)}` };
 }

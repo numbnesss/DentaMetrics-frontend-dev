@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import StarRating from '../../reviewPage/ui/StarRating/StarRating';
-import { avatarStyle, doctorAvatarColor, doctorBranchesLabel } from '../../../data/clinic';
+import { avatarStyle, doctorAvatarColor, doctorBranchesLabel, deltaInfo, DELTA_ICON } from '../../../data/clinic';
 import styles from './ProfileHeader.module.css';
 
 function doctorName(doctor) {
@@ -12,11 +12,10 @@ function doctorInitials(doctor) {
 }
 
 function formatDelta(key, value) {
-  if (value === undefined || value === null) return null;
-  const isUp = value >= 0;
-  const sign = isUp ? '+' : '';
-  if (key === 'rating') return { isUp, text: `рейтинг ${sign}${value.toFixed(2)} за период` };
-  return { isUp, text: `отзывов ${sign}${value} за период` };
+  const info = deltaInfo(value, key === 'rating' ? 2 : 0);
+  if (!info) return null;
+  const label = key === 'rating' ? 'рейтинг' : 'отзывов';
+  return { direction: info.direction, text: `${label} ${info.text} за период` };
 }
 
 export default function ProfileHeader({ doctor, trend, status, canArchive, archiving, onToggleArchive }) {
@@ -66,14 +65,14 @@ export default function ProfileHeader({ doctor, trend, status, canArchive, archi
               <StarRating value={Math.round(rating)} size={14} />
               <span className={styles.reviewCount}>{doctor.review_count ?? 0} отзывов за всё время</span>
               {ratingDelta && (
-                <span className={`${styles.trend} ${ratingDelta.isUp ? styles.up : styles.down}`}>
-                  <i className={`ti ti-arrow-${ratingDelta.isUp ? 'up' : 'down'}`} />
+                <span className={`${styles.trend} ${styles[ratingDelta.direction]}`}>
+                  <i className={`ti ${DELTA_ICON[ratingDelta.direction]}`} />
                   {ratingDelta.text}
                 </span>
               )}
               {reviewsDelta && (
-                <span className={`${styles.trend} ${reviewsDelta.isUp ? styles.up : styles.down}`}>
-                  <i className={`ti ti-arrow-${reviewsDelta.isUp ? 'up' : 'down'}`} />
+                <span className={`${styles.trend} ${styles[reviewsDelta.direction]}`}>
+                  <i className={`ti ${DELTA_ICON[reviewsDelta.direction]}`} />
                   {reviewsDelta.text}
                 </span>
               )}

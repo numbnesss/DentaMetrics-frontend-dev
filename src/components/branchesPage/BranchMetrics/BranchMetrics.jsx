@@ -1,4 +1,5 @@
 import styles from './BranchMetrics.module.css';
+import { deltaInfo, DELTA_ICON } from '../../../data/clinic';
 
 const METRICS = [
   { key: 'rating',   deltaKey: 'avg_branch_rating', label: 'Рейтинг',      sub: 'За период',    icon: 'ti-star' },
@@ -8,12 +9,9 @@ const METRICS = [
 ];
 
 function formatDelta(key, value) {
-  if (value === undefined || value === null) return null;
-  const isUp = value >= 0;
-  const sign = isUp ? '+' : '';
-  if (key === 'rating') return { isUp, text: `${sign}${value.toFixed(2)}` };
-  if (key === 'reviews') return { isUp, text: `${sign}${value}` };
-  return { isUp, text: `${sign}${value.toFixed(1)}%` };
+  const info = deltaInfo(value, key === 'rating' ? 2 : key === 'reviews' ? 0 : 1);
+  if (!info) return null;
+  return { direction: info.direction, text: key === 'rating' || key === 'reviews' ? info.text : `${info.text}%` };
 }
 
 export default function BranchMetrics({ branch, trend }) {
@@ -37,8 +35,8 @@ export default function BranchMetrics({ branch, trend }) {
             <div className={styles.value}>{values[m.key]}</div>
             <div className={styles.label}>{m.label}</div>
             {delta && (
-              <div className={`${styles.trend} ${delta.isUp ? styles.up : styles.down}`}>
-                <i className={`ti ti-arrow-${delta.isUp ? 'up' : 'down'}`} />
+              <div className={`${styles.trend} ${styles[delta.direction]}`}>
+                <i className={`ti ${DELTA_ICON[delta.direction]}`} />
                 {delta.text} за период
               </div>
             )}

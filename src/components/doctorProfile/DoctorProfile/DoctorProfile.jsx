@@ -6,6 +6,7 @@ import ProfileReviews from '../ProfileReviews/ProfileReviews';
 import { usePeriod } from '../../../context/PeriodContext';
 import { apiFetch } from '../../../api/apiFetch';
 import { useAuth } from '../../../context/AuthContext';
+import ConfirmDialog from '../../reviewPage/ui/ConfirmDialog/ConfirmDialog';
 import styles from './DoctorProfile.module.css';
 
 export default function DoctorProfile() {
@@ -19,6 +20,8 @@ export default function DoctorProfile() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState(null);
   const [archiving, setArchiving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [archiveError, setArchiveError] = useState('');
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
@@ -65,6 +68,7 @@ export default function DoctorProfile() {
   const toggleArchive = async () => {
     const action = status === 'archived' ? 'unarchive' : 'archive';
     setArchiving(true);
+    setArchiveError('');
     try {
       const response = await apiFetch(`/api/v1/doctors/${action}`, {
         method: 'POST',
@@ -74,12 +78,25 @@ export default function DoctorProfile() {
       const data = await response.json();
       if (response.ok && data.result === 'success') {
         setStatus(action === 'archive' ? 'archived' : 'active');
+        setConfirmOpen(false);
+      } else {
+        setArchiveError(action === 'archive' ? 'Не удалось перенести врача в архив' : 'Не удалось вернуть врача из архива');
       }
     } catch (error) {
       console.error(error);
+      setArchiveError('Не удалось подключиться к серверу');
     } finally {
       setArchiving(false);
     }
+  };
+
+  const handleArchiveClick = () => {
+    if (status === 'archived') {
+      toggleArchive();
+      return;
+    }
+    setArchiveError('');
+    setConfirmOpen(true);
   };
 
   const fetchSources = async () => {
@@ -96,7 +113,7 @@ export default function DoctorProfile() {
 
   const fetchTrend = async () => {
     if (isAllTime) {
-      setTrend({ avg_doctor_rating: 0, total_reviews: 0 });
+      setTrend(null);
       return;
     }
     try {
@@ -152,7 +169,7 @@ export default function DoctorProfile() {
         status={status}
         canArchive={isAdmin && status !== null}
         archiving={archiving}
-        onToggleArchive={toggleArchive}
+        onToggleArchive={handleArchiveClick}
       />
 
       <div className={styles.body}>
@@ -163,6 +180,19 @@ export default function DoctorProfile() {
           <ProfileReviews doctorId={id} sources={sources} />
         </div>
       </div>
+
+      {confirmOpen && (
+        <ConfirmDialog
+          title="Перенести врача в архив?"
+          text={`Врач «${[doctor.last_name, doctor.first_name, doctor.patronymic].filter(Boolean).join(' ')}» будет перенесён в архив. Отзывы и статистика сохранятся, вернуть врача можно в любой момент.`}
+          confirmLabel="В архив"
+          danger
+          busy={archiving}
+          error={archiveError}
+          onConfirm={toggleArchive}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
     </div>
   );
 }

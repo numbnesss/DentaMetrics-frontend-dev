@@ -19,6 +19,20 @@
   outline: none;
 }
 .select:focus { border-color: var(--teal); }
+.reset {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--rm);
+  background: none;
+  color: var(--t3);
+  font-size: 12px;
+  cursor: pointer;
+}
+.reset:hover { color: var(--t1); background: var(--bg2); }
 .counter {
   display: flex;
   align-items: center;

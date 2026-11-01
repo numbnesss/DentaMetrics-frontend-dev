@@ -128,7 +128,7 @@ function doctorRefs(ids) {
     .map((d) => ({ id: d.id, name: doctorShortName(d) }));
 }
 
-function makeReviews(count, branchName, forDoctor, idKey) {
+function makeReviews(count, branchName, forDoctor, idKey, branchId = 'branch-1') {
   return Array.from({ length: count }, (_, i) => {
     const rate = (() => {
       const r = Math.random();
@@ -146,7 +146,7 @@ function makeReviews(count, branchName, forDoctor, idKey) {
 
     const review = {
       id,
-      branch_id: 'branch-1',
+      branch_id: branchId,
       branch_name: branchName,
       // Backend now fills this array correctly for both /branches/:id/reviews
       // and /doctors/:id/reviews — no longer null on the branch-review path.
@@ -167,7 +167,7 @@ function makeReviews(count, branchName, forDoctor, idKey) {
 }
 
 const BRANCH_REVIEWS = {};
-BRANCHES.forEach((b) => { BRANCH_REVIEWS[b.id] = makeReviews(rndInt(30, 120), b.name, null, b.id); });
+BRANCHES.forEach((b) => { BRANCH_REVIEWS[b.id] = makeReviews(rndInt(30, 120), b.name, null, b.id, b.id); });
 const DOCTOR_REVIEWS = {};
 DOCTORS.forEach((d) => { DOCTOR_REVIEWS[d.id] = makeReviews(rndInt(10, 60), d.branch_name, d, d.id); });
 
@@ -220,6 +220,7 @@ function applyFilters(list, query) {
     return src && src.code === query.source;
   });
   if (query.doctor_id) out = out.filter((r) => (REVIEW_DOCTOR_IDS.get(r.id) || []).includes(query.doctor_id));
+  if (query.branch_id) out = out.filter((r) => r.branch_id === query.branch_id);
   out.sort((a, b) => {
     const da = new Date(a.review_date);
     const db = new Date(b.review_date);
@@ -231,8 +232,11 @@ function applyFilters(list, query) {
 // --- AUTH ---
 app.post('/auth/login', (req, res) => res.json({ result: 'success' }));
 app.get('/auth/logout', (req, res) => res.json({ result: 'success' }));
+app.post('/auth/logout', (req, res) => res.json({ result: 'success' }));
+// MOCK_ROLE=manager node mock-server.js — проверить режим «только чтение»
+const MOCK_ROLE = process.env.MOCK_ROLE || 'admin';
 app.get('/api/v1/getMe', (req, res) =>
-  res.json({ result: 'success', user: { id: 'u1', login: 'admin', role: 'admin' } }),
+  res.json({ result: 'success', user: { id: 'u1', login: MOCK_ROLE, role: MOCK_ROLE } }),
 );
 
 // --- SOURCES ---
@@ -324,6 +328,107 @@ app.delete('/api/v1/reviews/:id/doctor', (req, res) => {
 
   REVIEW_DOCTOR_IDS.set(review_id, []);
   review.doctor_id = [];
+  res.json({ result: 'success' });
+});
+
+// --- REVIEW FEED (все отзывы, offset-пагинация, те же фильтры) ---
+const FEED_PAGE_SIZE = 10;
+
+app.get('/api/v1/reviews', (req, res) => {
+  const all = Object.values(BRANCH_REVIEWS).flat();
+  const filtered = applyFilters(all, req.query);
+  const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+  res.json({
+    result: 'success',
+    data: {
+      reviews: filtered.slice(offset, offset + FEED_PAGE_SIZE),
+      total: filtered.length,
+      total_pages: Math.max(1, Math.ceil(filtered.length / FEED_PAGE_SIZE)),
+    },
+  });
+});
+
+// --- CREATE REVIEW (только admin) ---
+let createdCounter = 0;
+
+app.post('/api/v1/reviews', (req, res) => {
+  if (MOCK_ROLE !== 'admin') return res.status(403).json({ result: 'error', error: 'forbidden' });
+  const body = req.body || {};
+  const branch = BRANCHES.find((b) => b.id === body.branch_id);
+  const source = SOURCES.find((s) => s.id === body.source_id);
+  if (!branch || !source || !body.review_text || !(Number.isInteger(body.rate) && body.rate >= 1 && body.rate <= 5)) {
+    return res.status(400).json({ result: 'error', error: 'bad request was found', message: 'не заполнены обязательные поля' });
+  }
+  createdCounter += 1;
+  const id = `new-${createdCounter}`;
+  const ids = (body.doctors_ref || []).map((d) => d.id);
+  REVIEW_DOCTOR_IDS.set(id, ids);
+  const review = {
+    id,
+    branch_id: branch.id,
+    branch_name: branch.name,
+    doctor_id: doctorRefs(ids),
+    source_id: source.id,
+    source_name: source.code,
+    rate: body.rate,
+    author_name: body.author_name || 'Аноним',
+    review_text: body.review_text,
+    review_date: body.review_date || new Date().toISOString(),
+    review_link: body.review_link || '',
+    has_response: Boolean(body.has_response),
+    response_text: body.response_text || '',
+  };
+  ALL_REVIEWS_BY_ID.set(id, review);
+  BRANCH_REVIEWS[branch.id].push(review);
+  res.json({ result: 'success' });
+});
+
+// --- EDIT REVIEW (только admin, в теле только изменённые поля) ---
+const EDITABLE = ['rate', 'review_text', 'review_date', 'has_response', 'response_text', 'branch_id'];
+
+app.patch('/api/v1/reviews/:reviewId', (req, res) => {
+  if (MOCK_ROLE !== 'admin') return res.status(403).json({ result: 'error', error: 'forbidden' });
+  const review = ALL_REVIEWS_BY_ID.get(req.params.reviewId);
+  if (!review) return res.status(404).json({ result: 'error', error: 'not_found' });
+  const body = req.body || {};
+  if (body.rate !== undefined && !(Number.isInteger(body.rate) && body.rate >= 1 && body.rate <= 5)) {
+    return res.status(400).json({ result: 'error', error: 'bad request was found', message: 'rate должен быть от 1 до 5' });
+  }
+  if (body.branch_id !== undefined) {
+    const branch = BRANCHES.find((b) => b.id === body.branch_id);
+    if (!branch) return res.status(400).json({ result: 'error', error: 'bad request was found', message: 'филиал не найден' });
+    const from = BRANCH_REVIEWS[review.branch_id];
+    if (from && review.branch_id !== branch.id) {
+      BRANCH_REVIEWS[review.branch_id] = from.filter((r) => r.id !== review.id);
+      BRANCH_REVIEWS[branch.id].push(review);
+    }
+    review.branch_name = branch.name;
+  }
+  EDITABLE.forEach((key) => { if (body[key] !== undefined) review[key] = body[key]; });
+  if (Array.isArray(body.doctor_ids)) {
+    REVIEW_DOCTOR_IDS.set(review.id, [...body.doctor_ids]);
+    review.doctor_id = doctorRefs(body.doctor_ids);
+  }
+  res.json({ result: 'success' });
+});
+
+// --- LINK / UNLINK ONE DOCTOR ---
+app.patch('/api/v1/reviews/:reviewId/doctor/:doctorId', (req, res) => {
+  const review = ALL_REVIEWS_BY_ID.get(req.params.reviewId);
+  if (!review) return res.status(404).json({ result: 'error', error: 'not_found' });
+  const ids = REVIEW_DOCTOR_IDS.get(review.id) || [];
+  if (!ids.includes(req.params.doctorId)) ids.push(req.params.doctorId);
+  REVIEW_DOCTOR_IDS.set(review.id, ids);
+  review.doctor_id = doctorRefs(ids);
+  res.json({ result: 'success' });
+});
+
+app.delete('/api/v1/reviews/:reviewId/doctor/:doctorId', (req, res) => {
+  const review = ALL_REVIEWS_BY_ID.get(req.params.reviewId);
+  if (!review) return res.status(404).json({ result: 'error', error: 'not_found' });
+  const ids = (REVIEW_DOCTOR_IDS.get(review.id) || []).filter((id) => id !== req.params.doctorId);
+  REVIEW_DOCTOR_IDS.set(review.id, ids);
+  review.doctor_id = doctorRefs(ids);
   res.json({ result: 'success' });
 });
 

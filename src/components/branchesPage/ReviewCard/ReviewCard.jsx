@@ -13,7 +13,7 @@ function getTone(rate) {
   return rate >= 4 ? 'positive' : 'negative';
 }
 
-export default function ReviewCard({ review, source, isAdmin, onAssignClick }) {
+export default function ReviewCard({ review, source, isAdmin, showBranch = false, onAssignClick, onEditClick }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const tone = getTone(review.rate);
   const initials = (review.author_name || '?').trim().slice(0, 2).toUpperCase();
@@ -33,7 +33,18 @@ export default function ReviewCard({ review, source, isAdmin, onAssignClick }) {
             <SourceBadge source={source?.name || 'Источник'} color={source?.color_hex} />
             <span className={styles.date}>{formatDate(review.review_date)}</span>
           </div>
+          {showBranch && review.branch_name && (
+            <div className={styles.branch}>
+              <i className="ti ti-building-hospital" />
+              {review.branch_name}
+            </div>
+          )}
         </div>
+        {isAdmin && onEditClick && (
+          <button type="button" className={styles.editBtn} onClick={onEditClick} title="Редактировать отзыв" aria-label="Редактировать отзыв">
+            <i className="ti ti-pencil" />
+          </button>
+        )}
       </div>
 
       <p className={styles.text}>{review.review_text}</p>

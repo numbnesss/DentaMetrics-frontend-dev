@@ -77,3 +77,28 @@
   align-self: flex-start;
 }
 .replyLink:hover { text-decoration: underline; }
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.editBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--rm);
+  background: none;
+  color: var(--t3);
+  font-size: 15px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.editBtn:hover { color: var(--t1); background: var(--bg2); }

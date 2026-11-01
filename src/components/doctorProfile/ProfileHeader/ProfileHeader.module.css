@@ -115,6 +115,7 @@
 }
 .up { color: var(--teal); }
 .down { color: var(--red); }
+.flat { color: var(--t3); }
 
 .metrics {
   display: flex;

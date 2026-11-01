@@ -6,13 +6,14 @@ import ReviewFilters from '../ReviewFilters/ReviewFilters';
 import ReviewCard from '../ReviewCard/ReviewCard';
 import ReviewPagination from '../ReviewPagination/ReviewPagination';
 import AssignModal from '../AssignModal/AssignModal';
+import EditReviewModal from '../EditReviewModal/EditReviewModal';
 import { useAuth } from '../../../context/AuthContext';
 import { usePeriod } from '../../../context/PeriodContext';
 import { apiFetch } from '../../../api/apiFetch';
 import { doctorWorksIn } from '../../../data/clinic';
 import styles from './BranchDetails.module.css';
 
-export default function BranchDetails({ branch, doctors, sources, onClose }) {
+export default function BranchDetails({ branch, branches = [], doctors, sources, onClose }) {
   const { user } = useAuth();
   const { dateRange, prevRange, isAllTime } = usePeriod();
   const isAdmin = user?.role === 'admin';
@@ -23,6 +24,7 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
   const [filters, setFilters] = useState({ sentiment: 'all', source: 'all', doctor: 'all', order: 'newest' });
   const [trend, setTrend] = useState(null);
   const [assigningReview, setAssigningReview] = useState(null);
+  const [editingReview, setEditingReview] = useState(null);
   const [toast, setToast] = useState('');
   const toastTimer = useRef(null);
   const wrapRef = useRef(null);
@@ -60,7 +62,7 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
 
   const fetchTrend = async () => {
     if (isAllTime) {
-      setTrend({ total_reviews: 0, avg_branch_rating: 0, positive_pct: 0, negative_pct: 0 });
+      setTrend(null);
       return;
     }
     try {
@@ -114,6 +116,17 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
     showToast(doctorRefs.length > 0 ? 'Привязка сохранена' : 'Отзыв отвязан от врачей');
   };
 
+  const handleEdited = (updated) => {
+    if (updated.branch_id && updated.branch_id !== branch.id) {
+      // отзыв перенесли в другой филиал — из этого списка он уходит
+      setReviews((prev) => prev.filter((r) => r.id !== updated.id));
+      showToast(`Отзыв перенесён в филиал «${updated.branch_name}»`);
+      return;
+    }
+    setReviews((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    showToast('Отзыв сохранён');
+  };
+
   const handleUnassigned = (reviewId) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === reviewId ? { ...r, doctor_id: [] } : r)),
@@ -163,6 +176,7 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
                     source={sourceMap.get(r.source_id)}
                     isAdmin={isAdmin}
                     onAssignClick={() => handleAssignClick(r)}
+                    onEditClick={() => setEditingReview(r)}
                   />
                 ))
               : (
@@ -185,6 +199,15 @@ export default function BranchDetails({ branch, doctors, sources, onClose }) {
           onClose={() => setAssigningReview(null)}
           onSaved={handleSaved}
           onUnassigned={handleUnassigned}
+        />
+      )}
+
+      {editingReview && (
+        <EditReviewModal
+          review={editingReview}
+          branches={branches}
+          onClose={() => setEditingReview(null)}
+          onSaved={handleEdited}
         />
       )}
 

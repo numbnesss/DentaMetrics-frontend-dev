@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import DoctorCard from '../DoctorCard/DoctorCard';
 import DoctorsFilters from '../DoctorsFilters/DoctorsFilters';
+import AddDoctorModal from '../AddDoctorModal/AddDoctorModal';
+import { useAuth } from '../../../context/AuthContext';
 import { usePeriod } from '../../../context/PeriodContext';
 import { apiFetch } from '../../../api/apiFetch';
 import { doctorBranches, doctorWorksIn } from '../../../data/clinic';
@@ -19,6 +21,9 @@ export default function Doctors() {
   const [search, setSearch]   = useState('');
   const [branch, setBranch]   = useState('Все филиалы');
   const [sort, setSort]       = useState('rating_desc');
+  const [addOpen, setAddOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     fetchDoctors();
@@ -64,6 +69,12 @@ export default function Doctors() {
           Врачи
         </h1>
         <span className={styles.pageCount}>{filtered.length} врачей</span>
+        {isAdmin && (
+          <button type="button" className={styles.addBtn} onClick={() => setAddOpen(true)}>
+            <i className="ti ti-plus" />
+            Добавить врача
+          </button>
+        )}
       </div>
 
       <DoctorsFilters
@@ -85,6 +96,8 @@ export default function Doctors() {
           <span>Врачи не найдены</span>
         </div>
       )}
+
+      {addOpen && <AddDoctorModal onClose={() => setAddOpen(false)} onCreated={fetchDoctors} />}
     </div>
   );
 }

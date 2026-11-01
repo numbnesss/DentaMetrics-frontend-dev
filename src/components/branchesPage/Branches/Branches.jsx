@@ -20,8 +20,7 @@ export default function Branches() {
 
   useEffect(() => {
     if (isAllTime) {
-      const zeroTrend = { total_reviews: 0, avg_branch_rating: 0, positive_pct: 0, negative_pct: 0 };
-      setBranches((prev) => prev.map((b) => ({ ...b, trend: zeroTrend })));
+      setBranches((prev) => prev.map((b) => ({ ...b, trend: null })));
       return;
     }
     if (branches.length > 0) fetchTrends();
@@ -118,6 +117,7 @@ export default function Branches() {
         <BranchDetails
           key={selectedBranch.id}
           branch={selectedBranch}
+          branches={branches}
           doctors={doctors}
           sources={sources}
           onClose={() => setOpenId(null)}

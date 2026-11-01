@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import KpiGrid from '../KpiGrid/KpiGrid';
 import SourceRatings from '../SourceRatings/SourceRatings';
+import AllReviews from '../AllReviews/AllReviews';
 import BranchRatings from '../BranchRatings/BranchRatings';
 import DynamicsChart from '../DynamicsChart/DynamicsChart';
 import ReviewFeed from '../ReviewFeed/ReviewFeed';
 import { usePeriod } from '../../../../context/PeriodContext';
 import { apiFetch } from '../../../../api/apiFetch';
+import { deltaInfo } from '../../../../data/clinic';
 import styles from './Dashboard.module.css';
 
 const KPI_CONFIG = [
@@ -24,17 +26,11 @@ function formatKpiValue(key, value) {
 }
 
 function formatDelta(key, value) {
-  if (value === undefined || value === null) return null;
-  const direction = value >= 0 ? 'up' : 'down';
-  const sign = value >= 0 ? '+' : '';
-
-  if (key === 'positive_pct' || key === 'negative_pct') {
-    return { direction, text: `${sign}${value.toFixed(1)}% за период` };
-  }
-  if (key === 'avg_branch_rating' || key === 'avg_doctor_rating') {
-    return { direction, text: `${sign}${value.toFixed(2)} за период` };
-  }
-  return { direction, text: `${sign}${value} за период` };
+  const isPct = key === 'positive_pct' || key === 'negative_pct';
+  const isRating = key === 'avg_branch_rating' || key === 'avg_doctor_rating';
+  const info = deltaInfo(value, isPct ? 1 : isRating ? 2 : 0);
+  if (!info) return null;
+  return { direction: info.direction, text: `${info.text}${isPct ? '%' : ''} за период` };
 }
 
 function groupByMonth(points) {
@@ -62,7 +58,11 @@ function groupByMonth(points) {
 }
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const date = new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export default function Dashboard() {
@@ -72,6 +72,7 @@ export default function Dashboard() {
   const [branches, setBranches] = useState([]);
   const [sources, setSources] = useState([]);
   const [trendDelta, setTrendDelta] = useState(null);
+  const [trendCurrent, setTrendCurrent] = useState(null);
   const [todayCount, setTodayCount] = useState(undefined);
   const [chartData, setChartData] = useState([]);
   const [sourceRatings, setSourceRatings] = useState([]);
@@ -106,7 +107,8 @@ export default function Dashboard() {
 
   const fetchTrend = async () => {
     if (isAllTime) {
-      setTrendDelta(Object.fromEntries(KPI_CONFIG.map((cfg) => [cfg.key, 0])));
+      setTrendDelta(null);
+      setTrendCurrent(null);
       return;
     }
     try {
@@ -123,6 +125,7 @@ export default function Dashboard() {
       const data = await response.json();
       if (response.ok && data.result === 'success') {
         setTrendDelta(data.data.delta);
+        setTrendCurrent(data.data.current);
       }
     } catch (error) {
       console.error(error);
@@ -192,10 +195,12 @@ export default function Dashboard() {
     color_hex: sourceMap.get(r.source_id)?.color_hex,
   }));
 
+  const kpiSource = !isAllTime && trendCurrent ? trendCurrent : overview;
+
   const kpiItems = KPI_CONFIG.map((cfg) => ({
     icon: cfg.icon,
     label: cfg.label,
-    value: formatKpiValue(cfg.key, overview?.[cfg.key]),
+    value: formatKpiValue(cfg.key, kpiSource?.[cfg.key]),
     delta: formatDelta(cfg.key, trendDelta?.[cfg.key]),
   }));
 
@@ -227,6 +232,8 @@ export default function Dashboard() {
           <DynamicsChart data={chartData} />
         </div>
       </div>
+
+      <AllReviews sources={sources} />
     </div>
   );
 }

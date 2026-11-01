@@ -5,6 +5,12 @@ import { useAuth } from '../../../context/AuthContext';
 import logo from '../../../assets/logo.png';
 import styles from './Navbar.module.css';
 
+const ROLE_LABELS = {
+  admin: 'Администратор',
+  manager: 'Менеджер',
+  analyst: 'Аналитик',
+};
+
 const LINKS = [
   { to: '/',         label: 'Обзор',   icon: 'ti-layout-dashboard', end: true },
   { to: '/branches', label: 'Филиалы', icon: 'ti-building-hospital' },
@@ -104,7 +110,7 @@ function UserMenu() {
         <div className={styles.userMenu}>
           <div className={styles.userInfo}>
             <div className={styles.userName}>{user?.login}</div>
-            <div className={styles.userRole}>{user?.role}</div>
+            <div className={styles.userRole}>{ROLE_LABELS[user?.role] ?? user?.role}</div>
           </div>
           <button className={styles.logout} onClick={handleLogout}>
             <i className="ti ti-logout" />
