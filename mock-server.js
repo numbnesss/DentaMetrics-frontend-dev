@@ -331,21 +331,86 @@ app.delete('/api/v1/reviews/:id/doctor', (req, res) => {
   res.json({ result: 'success' });
 });
 
-// --- REVIEW FEED (все отзывы, offset-пагинация, те же фильтры) ---
-const FEED_PAGE_SIZE = 10;
-
+// --- REVIEW FEED: page / per_page (1–20, по умолчанию 7), без total; пусто — data: null ---
 app.get('/api/v1/reviews', (req, res) => {
   const all = Object.values(BRANCH_REVIEWS).flat();
   const filtered = applyFilters(all, req.query);
-  const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  let perPage = parseInt(req.query.per_page, 10);
+  if (!(perPage > 0)) perPage = 7;
+  perPage = Math.min(perPage, 20);
+  const slice = filtered.slice((page - 1) * perPage, page * perPage);
+  res.json({ result: 'success', data: slice.length > 0 ? slice : null });
+});
+
+// --- ОПУБЛИКОВАННЫЕ РЕЙТИНГИ ПЛОЩАДОК (снимки source_ratings) ---
+const SOURCE_SNAPSHOTS = [];
+BRANCHES.forEach((b) => {
+  SOURCES.forEach((src) => {
+    let rating = 4.3 + Math.random() * 0.6;
+    for (let daysAgo = 75; daysAgo >= 0; daysAgo -= 3) {
+      rating = Math.min(5, Math.max(3.8, rating + (Math.random() - 0.5) * 0.08));
+      const at = new Date(Date.now() - daysAgo * 86400000);
+      at.setUTCHours(8, 30, 0, 0);
+      SOURCE_SNAPSHOTS.push({
+        branch_id: b.id, branch_name: b.name, source_id: src.id, source_name: src.name,
+        rating: Math.round(rating * 100) / 100, collected_at: at.toISOString(),
+      });
+    }
+  });
+});
+
+app.get('/api/v1/branches/:id/source-rates', (req, res) => {
+  const latest = new Map();
+  SOURCE_SNAPSHOTS.filter((x) => x.branch_id === req.params.id).forEach((x) => {
+    const prev = latest.get(x.source_id);
+    if (!prev || prev.collected_at < x.collected_at) latest.set(x.source_id, x);
+  });
   res.json({
     result: 'success',
-    data: {
-      reviews: filtered.slice(offset, offset + FEED_PAGE_SIZE),
-      total: filtered.length,
-      total_pages: Math.max(1, Math.ceil(filtered.length / FEED_PAGE_SIZE)),
-    },
+    data: [...latest.values()].map((x) => ({
+      branch_id: x.branch_id, branch_name: x.branch_name, source_id: x.source_id,
+      source_name: x.source_name, current_rating: x.rating, collected_at: x.collected_at,
+    })),
   });
+});
+
+// avgrate: средние по парам (филиал, источник); origin=published (по умолчанию) | computed
+app.get('/api/v1/overview/avgrate', (req, res) => {
+  const origin = req.query.origin || req.query.type || 'published';
+  if (!['published', 'computed'].includes(origin)) {
+    return res.status(400).json({ result: 'error', error: 'query for origin is bad', message: "origin must be 'published'" });
+  }
+  const from = req.query.date_from ? new Date(`${req.query.date_from}T00:00:00Z`) : null;
+  const to = req.query.date_to ? new Date(`${req.query.date_to}T00:00:00Z`) : null;
+  const inRange = (iso) => {
+    const t = new Date(iso);
+    return (!from || t >= from) && (!to || t < to);
+  };
+  const groups = new Map();
+  const add = (branch, source, value) => {
+    const key = `${branch.id}|${source.id}`;
+    if (!groups.has(key)) groups.set(key, { branch, source, values: [] });
+    groups.get(key).values.push(value);
+  };
+  if (origin === 'published') {
+    SOURCE_SNAPSHOTS.filter((x) => inRange(x.collected_at)).forEach((x) =>
+      add({ id: x.branch_id, name: x.branch_name }, { id: x.source_id, name: x.source_name }, x.rating));
+  } else {
+    Object.values(BRANCH_REVIEWS).flat().filter((r) => inRange(r.review_date)).forEach((r) => {
+      const branch = BRANCHES.find((b) => b.id === r.branch_id);
+      const source = SOURCES.find((x) => x.id === r.source_id);
+      if (branch && source) add(branch, source, r.rate);
+    });
+  }
+  const data = [...groups.values()]
+    .map(({ branch, source, values }) => ({
+      branch_id: branch.id, branch_name: branch.name, source_id: source.id, source_name: source.name,
+      avg_rate: Math.round((values.reduce((a, v) => a + v, 0) / values.length) * 100) / 100,
+      measurements_count: values.length,
+    }))
+    .sort((x, y) => x.branch_name.localeCompare(y.branch_name) || x.source_name.localeCompare(y.source_name));
+  res.json({ result: 'success', data });
 });
 
 // --- CREATE REVIEW (только admin) ---
@@ -359,25 +424,32 @@ app.post('/api/v1/reviews', (req, res) => {
   if (!branch || !source || !body.review_text || !(Number.isInteger(body.rate) && body.rate >= 1 && body.rate <= 5)) {
     return res.status(400).json({ result: 'error', error: 'bad request was found', message: 'не заполнены обязательные поля' });
   }
-  createdCounter += 1;
-  const id = `new-${createdCounter}`;
-  const ids = (body.doctors_ref || []).map((d) => d.id);
-  REVIEW_DOCTOR_IDS.set(id, ids);
-  const review = {
-    id,
+  // как на бэке: (external_id, source_id) уникальны — повтор обновляет запись; врачи из doctors_ref не сохраняются
+  const externalId = body.external_id ?? '';
+  const existing = Object.values(BRANCH_REVIEWS).flat()
+    .find((r) => (r.external_id ?? null) === externalId && r.source_id === source.id);
+  const fields = {
     branch_id: branch.id,
     branch_name: branch.name,
-    doctor_id: doctorRefs(ids),
     source_id: source.id,
     source_name: source.code,
     rate: body.rate,
-    author_name: body.author_name || 'Аноним',
+    author_name: body.author_name ?? '',
     review_text: body.review_text,
     review_date: body.review_date || new Date().toISOString(),
-    review_link: body.review_link || '',
+    review_link: body.review_link ?? '',
     has_response: Boolean(body.has_response),
-    response_text: body.response_text || '',
+    response_text: body.response_text ?? null,
+    external_id: externalId,
   };
+  if (existing) {
+    Object.assign(existing, fields);
+    return res.json({ result: 'success' });
+  }
+  createdCounter += 1;
+  const id = `new-${createdCounter}`;
+  REVIEW_DOCTOR_IDS.set(id, []);
+  const review = { id, doctor_id: [], ...fields };
   ALL_REVIEWS_BY_ID.set(id, review);
   BRANCH_REVIEWS[branch.id].push(review);
   res.json({ result: 'success' });

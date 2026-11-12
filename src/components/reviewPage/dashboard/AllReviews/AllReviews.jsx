@@ -10,14 +10,15 @@ import { apiFetch } from '../../../../api/apiFetch';
 import { doctorWorksIn } from '../../../../data/clinic';
 import styles from './AllReviews.module.css';
 
-const DEFAULT_PAGE_SIZE = 10;
+// /api/v1/reviews принимает page и per_page (1–20), offset не читает
+// и не присылает total / total_pages — есть ли следующая страница, понимаем по размеру ответа.
+const PAGE_SIZE = 10;
 
 const DEFAULT_FILTERS = { sentiment: 'all', source: 'all', branch: 'all', doctor: 'all', order: 'newest' };
 
-// Те же параметры, что у /branches/:id/reviews и /doctors/:id/reviews.
-// Если бэк назовёт их иначе для /reviews, поменять только здесь.
-function buildQuery(offset, filters) {
-  const params = new URLSearchParams({ offset: String(offset), order: filters.order });
+// Общие фильтры отзывов из документации бэка: source — код источника, branch_id / doctor_id — UUID.
+function buildQuery(page, filters) {
+  const params = new URLSearchParams({ page: String(page), per_page: String(PAGE_SIZE), order: filters.order });
   if (filters.sentiment !== 'all') params.set('sentiment', filters.sentiment);
   if (filters.source !== 'all') params.set('source', filters.source);
   if (filters.branch !== 'all') params.set('branch_id', filters.branch);
@@ -30,6 +31,9 @@ function isDefaultFilters(filters) {
 }
 
 function readPayload(payload) {
+  if (payload === null || payload === undefined) {
+    return { reviews: [], total: null, totalPages: null };
+  }
   if (Array.isArray(payload)) {
     return { reviews: payload, total: null, totalPages: null };
   }
@@ -53,23 +57,22 @@ export default function AllReviews({ sources }) {
   const [notice, setNotice] = useState('');
   const noticeTimer = useRef(null);
   const [reviews, setReviews] = useState([]);
-  const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
+  const lastPageRef = useRef(null); // последняя страница, если уже знаем, где лента кончается
+  const furthestFullRef = useRef(0); // самая дальняя полностью заполненная страница
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [doctors, setDoctors] = useState([]);
   const [assigningReview, setAssigningReview] = useState(null);
   const wrapRef = useRef(null);
-  const pageSizeRef = useRef(DEFAULT_PAGE_SIZE);
 
   const sourceMap = useMemo(() => new Map((sources ?? []).map((s) => [s.id, s])), [sources]);
 
   useEffect(() => {
     let cancelled = false;
-    const requestOffset = (page - 1) * pageSizeRef.current;
 
-    apiFetch(`/api/v1/reviews?${buildQuery(requestOffset, filters)}`)
+    apiFetch(`/api/v1/reviews?${buildQuery(page, filters)}`)
       .then((response) => response.json().then((data) => ({ response, data })))
       .then(({ response, data }) => {
         if (cancelled) return;
@@ -78,15 +81,22 @@ export default function AllReviews({ sources }) {
           return;
         }
         const parsed = readPayload(data.data);
-        if (page === 1 && parsed.totalPages > 1 && parsed.reviews.length > 0) {
-          pageSizeRef.current = parsed.reviews.length;
+
+        // ушли за конец ленты (прошлая страница была ровно полной) — возвращаемся назад
+        if (parsed.reviews.length === 0 && page > 1 && parsed.totalPages === null) {
+          lastPageRef.current = page - 1;
+          setPage(page - 1);
+          return;
         }
+
+        if (parsed.reviews.length < PAGE_SIZE) lastPageRef.current = page;
+        else furthestFullRef.current = Math.max(furthestFullRef.current, page);
+
         setError('');
         setReviews(parsed.reviews.map((r) => ({ ...r, doctor_id: r.doctor_id ?? [] })));
-        setOffset(requestOffset);
         setTotal(parsed.total);
         setTotalPages(
-          parsed.totalPages ?? (parsed.total ? Math.ceil(parsed.total / pageSizeRef.current) : 1),
+          parsed.totalPages ?? lastPageRef.current ?? Math.max(furthestFullRef.current, page) + 1,
         );
       })
       .catch((err) => {
@@ -103,7 +113,13 @@ export default function AllReviews({ sources }) {
     };
   }, [page, filters, reloadKey]);
 
+  const resetPaging = () => {
+    lastPageRef.current = null;
+    furthestFullRef.current = 0;
+  };
+
   const changeFilters = (nextFilters) => {
+    resetPaging();
     setLoading(true);
     setFilters(nextFilters);
     setPage(1);
@@ -150,6 +166,7 @@ export default function AllReviews({ sources }) {
   };
 
   const handleCreated = () => {
+    resetPaging();
     setLoading(true);
     setPage(1);
     setReloadKey((k) => k + 1);
@@ -164,8 +181,8 @@ export default function AllReviews({ sources }) {
     setReviews((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   };
 
-  const from = offset + 1;
-  const to = offset + reviews.length;
+  const from = (page - 1) * PAGE_SIZE + 1;
+  const to = from + reviews.length - 1;
 
   return (
     <div className={styles.card} ref={wrapRef}>
@@ -181,9 +198,10 @@ export default function AllReviews({ sources }) {
               {notice}
             </span>
           )}
-          {total !== null && reviews.length > 0 && (
+          {reviews.length > 0 && (
             <span className={styles.counter}>
-              Показано {from}–{to} из {total}
+              Показано {from}–{to}
+              {total !== null && ` из ${total}`}
             </span>
           )}
           {isAdmin && (
@@ -245,7 +263,6 @@ export default function AllReviews({ sources }) {
         <AddReviewModal
           branches={branches}
           sources={sources ?? []}
-          doctors={doctors}
           defaultBranchId={filters.branch !== 'all' ? filters.branch : ''}
           onClose={() => setAddOpen(false)}
           onCreated={handleCreated}

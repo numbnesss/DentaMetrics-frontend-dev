@@ -32,13 +32,13 @@ export default function ReviewCard({ review, source, isAdmin, showBranch = false
           <div className={styles.subRow}>
             <SourceBadge source={source?.name || 'Источник'} color={source?.color_hex} />
             <span className={styles.date}>{formatDate(review.review_date)}</span>
+            {showBranch && review.branch_name && (
+              <span className={styles.branch}>
+                <i className="ti ti-building-hospital" />
+                {review.branch_name}
+              </span>
+            )}
           </div>
-          {showBranch && review.branch_name && (
-            <div className={styles.branch}>
-              <i className="ti ti-building-hospital" />
-              {review.branch_name}
-            </div>
-          )}
         </div>
         {isAdmin && onEditClick && (
           <button type="button" className={styles.editBtn} onClick={onEditClick} title="Редактировать отзыв" aria-label="Редактировать отзыв">

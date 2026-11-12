@@ -4,9 +4,9 @@ import SourceRatings from '../SourceRatings/SourceRatings';
 import AllReviews from '../AllReviews/AllReviews';
 import BranchRatings from '../BranchRatings/BranchRatings';
 import DynamicsChart from '../DynamicsChart/DynamicsChart';
-import ReviewFeed from '../ReviewFeed/ReviewFeed';
 import { usePeriod } from '../../../../context/PeriodContext';
 import { apiFetch } from '../../../../api/apiFetch';
+import { loadSourceRatings } from '../../../../api/sourceRatings';
 import { deltaInfo } from '../../../../data/clinic';
 import styles from './Dashboard.module.css';
 
@@ -57,26 +57,17 @@ function groupByMonth(points) {
   return Array.from(buckets.values()).sort((a, b) => a.order - b.order);
 }
 
-function todayISO() {
-  const date = new Date();
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 export default function Dashboard() {
   const { label, periodDays, periodQuery, dateRange, prevRange, isAllTime } = usePeriod();
   const [overview, setOverview] = useState(null);
-  const [latestReviews, setLatestReviews] = useState([]);
   const [branches, setBranches] = useState([]);
   const [sources, setSources] = useState([]);
   const [trendDelta, setTrendDelta] = useState(null);
   const [trendCurrent, setTrendCurrent] = useState(null);
-  const [todayCount, setTodayCount] = useState(undefined);
   const [chartData, setChartData] = useState([]);
   const [sourceRatings, setSourceRatings] = useState([]);
   const [sourceRatingsUpdatedAt, setSourceRatingsUpdatedAt] = useState(null);
+  const [sourceRatingsPrevMonth, setSourceRatingsPrevMonth] = useState(null);
 
   useEffect(() => {
     fetchOverview();
@@ -86,9 +77,24 @@ export default function Dashboard() {
   useEffect(() => {
     fetchChart();
     fetchSources();
-    fetchSourceRatings();
-    fetchTodayCount();
   }, []);
+
+  // опубликованный рейтинг грузим, когда пришёл справочник источников (цвета, порядок)
+  useEffect(() => {
+    if (sources.length === 0) return undefined;
+    let cancelled = false;
+    loadSourceRatings(sources)
+      .then(({ rows, updatedAt, prevMonth }) => {
+        if (cancelled) return;
+        setSourceRatings(rows);
+        setSourceRatingsUpdatedAt(updatedAt);
+        setSourceRatingsPrevMonth(prevMonth);
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelled = true;
+    };
+  }, [sources]);
 
   const fetchOverview = async () => {
     try {
@@ -97,7 +103,6 @@ export default function Dashboard() {
       const data = await response.json();
       if (response.ok && data.result === 'success') {
         setOverview(data.overview);
-        setLatestReviews(data.latest_reviews ?? []);
         setBranches(data.branches ?? []);
       }
     } catch (error) {
@@ -132,43 +137,12 @@ export default function Dashboard() {
     }
   };
 
-  const fetchTodayCount = async () => {
-    try {
-      const today = todayISO();
-      const response = await apiFetch('/api/v1/overview/trend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date_from: today, date_to: today }),
-      });
-      const data = await response.json();
-      if (response.ok && data.result === 'success') {
-        setTodayCount(data.data.current.total_reviews);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const fetchChart = async () => {
     try {
       const response = await apiFetch('/api/v1/overview/chart?period_days=365');
       const data = await response.json();
       if (response.ok && data.result === 'success') {
         setChartData(groupByMonth(data.overview));
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchSourceRatings = async () => {
-    try {
-      const response = await apiFetch('/api/v1/overview/avgrate');
-      const data = await response.json();
-      if (response.ok && data.result === 'success') {
-        const payload = data.data;
-        setSourceRatings(Array.isArray(payload) ? payload : payload?.sources ?? []);
-        setSourceRatingsUpdatedAt(Array.isArray(payload) ? null : payload?.updated_at ?? null);
       }
     } catch (error) {
       console.error(error);
@@ -191,8 +165,7 @@ export default function Dashboard() {
 
   const sourceRatingCards = sourceRatings.map((r) => ({
     ...r,
-    current_rating: r.avg_rating ?? r.current_rating,
-    color_hex: sourceMap.get(r.source_id)?.color_hex,
+    color_hex: r.color_hex ?? sourceMap.get(r.source_id)?.color_hex,
   }));
 
   const kpiSource = !isAllTime && trendCurrent ? trendCurrent : overview;
@@ -211,15 +184,7 @@ export default function Dashboard() {
       <div className={styles.sectionLabel}>Ключевые показатели · {label}</div>
       <KpiGrid items={kpiItems} />
 
-      <SourceRatings sources={sourceRatingCards} updatedAt={sourceRatingsUpdatedAt} />
-
-      <ReviewFeed
-        title="Последние отзывы"
-        icon="ti-messages"
-        todayCount={todayCount}
-        reviews={latestReviews}
-        sourceMap={sourceMap}
-      />
+      <SourceRatings sources={sourceRatingCards} updatedAt={sourceRatingsUpdatedAt} prevMonth={sourceRatingsPrevMonth} />
 
       <div className={styles.bottomRow}>
         <BranchRatings branches={branchBars} />

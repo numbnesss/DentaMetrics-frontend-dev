@@ -55,7 +55,8 @@ export default function EditReviewModal({ review, branches, onClose, onSaved }) 
     return changes;
   };
 
-  const canSave = form.review_date && !(form.has_response && !form.response_text.trim()) && !saving;
+  const canSave =
+    form.review_date && form.review_text.trim() && !(form.has_response && !form.response_text.trim()) && !saving;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

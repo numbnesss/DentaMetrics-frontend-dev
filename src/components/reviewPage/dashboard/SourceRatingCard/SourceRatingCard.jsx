@@ -5,8 +5,9 @@ const ARROW_ICON = { up: 'ti-arrow-up', down: 'ti-arrow-down', flat: 'ti-arrow-r
 
 function trendArrow(current, prev) {
   if (current === null || current === undefined || prev === null || prev === undefined) return null;
-  const a = Math.round(current * 10);
-  const b = Math.round(prev * 10);
+  // сравниваем ровно то, что видно на карточке (одна цифра после запятой)
+  const a = Number(current.toFixed(1));
+  const b = Number(prev.toFixed(1));
   if (a > b) return 'up';
   if (a < b) return 'down';
   return 'flat';
@@ -37,7 +38,7 @@ export default function SourceRatingCard({ source: raw, snapshotLabel }) {
 
       <StarRating value={hasData ? Math.round(starValue) : 0} size={12} color={hasData ? source.color_hex : undefined} />
 
-      <div className={styles.count}>{!hasData ? 'Нет отзывов' : source.review_count != null ? `${source.review_count} отзывов` : ''}</div>
+      <div className={styles.count}>{!hasData ? 'Нет данных' : source.review_count != null ? `${source.review_count} отзывов` : ''}</div>
 
       <div className={styles.divider} />
 

@@ -1,10 +1,11 @@
 import SourceRatingCard from '../SourceRatingCard/SourceRatingCard';
 import styles from './SourceRatings.module.css';
 
-function lastMonthLabel() {
-  const now = new Date();
-  const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  return firstOfLastMonth.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+// подпись строки сравнения: средний опубликованный рейтинг за прошлый месяц
+function monthLabel(date) {
+  const d = date ?? new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+  const name = d.toLocaleDateString('ru-RU', { month: 'long' });
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 function formatUpdatedAt(dateStr) {
@@ -15,10 +16,10 @@ function formatUpdatedAt(dateStr) {
   return `${date} ${time}`;
 }
 
-export default function SourceRatings({ sources, updatedAt }) {
+export default function SourceRatings({ sources, updatedAt, prevMonth }) {
   if (!sources || sources.length === 0) return null;
 
-  const snapshotLabel = lastMonthLabel();
+  const snapshotLabel = monthLabel(prevMonth);
 
   return (
     <div className={styles.card}>

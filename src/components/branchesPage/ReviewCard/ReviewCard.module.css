@@ -18,7 +18,7 @@
 .meta { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
 .nameRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .name { font-size: 13px; font-weight: 600; color: var(--t1); }
-.subRow { display: flex; align-items: center; gap: 6px; }
+.subRow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .date { font-size: 11px; color: var(--t3); }
 .text { font-size: 13px; color: var(--t2); line-height: 1.55; margin: 0; overflow-wrap: anywhere; }
 .footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -79,12 +79,14 @@
 .replyLink:hover { text-decoration: underline; }
 
 .branch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  margin-left: 4px;
   font-size: 11px;
   color: var(--t3);
 }
+
 
 .editBtn {
   flex-shrink: 0;
